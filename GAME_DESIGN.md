@@ -12,6 +12,21 @@ Ein gemütliches **Tycoon-Spiel**, in dem man ein **Rockfestival** organisiert, 
 - **Spielprinzip:** wie *RollerCoaster Tycoon*: bauen, verwalten, Besucher glücklich machen, wirtschaften
 - **Grafikstil:** warme, gemütliche **Pixel-Art in der Top-down-Ansicht**, inspiriert von *Stardew Valley* (eigene Grafiken, nichts kopieren)
 - **Kern-Motivation:** Aus einem kleinen Dorffest wird über die Jahre ein großes Festival. Wie stark es wächst, hängt davon ab, wie gut man im Vorjahr gewirtschaftet hat.
+- **Spielziele:** Einnahmen erzielen, **Künstler zufriedenstellen** und **Besucher zufriedenstellen**; alle drei müssen gegeneinander abgewogen werden.
+
+### 1.1 Aufbau des Geländes: drei Bereiche
+
+| Bereich | Wer ist dort | Was wird gebraucht |
+|---|---|---|
+| **Campingplatz** | Gäste zelten | Zeltflächen, Müllsammelstellen, Klos |
+| **Bühnengelände** | Gäste feiern | Bühne, Essensstände, Bierbuden |
+| **Backstage** | Künstler, Technik, Logistik | Künstlerbereich, Technik, Anlieferung |
+
+### 1.2 Wege
+
+- Besucher laufen **frei über die Wiese**, wie auf einem echten Festival.
+- **Wege sind Versorgungsadern:** Über sie kommen Lieferungen (Bier, Essen) zu den Ständen, Technik zur Bühne und Künstler in den Backstage-Bereich. Ein Stand ohne Wegverbindung wird schlecht oder gar nicht beliefert.
+- Bei Regen wird die Wiese matschig, Wege bleiben gut befahrbar.
 
 ---
 
@@ -122,7 +137,7 @@ Jeder Besucher ist eine kleine Pixel-Figur mit eigenen Werten:
 | Sauberkeit / Hygiene | Duschen, saubere Wege |
 
 - Daraus ergibt sich eine **Zufriedenheit** pro Besucher
-- Besucher suchen sich per Wegfindung das nächste passende Angebot
+- Besucher suchen sich per Wegfindung das nächste passende Angebot und laufen dabei frei über die Wiese (Wege sind für die Logistik, siehe 1.2)
 - Lange Schlangen, Dreck und Matsch senken die Laune
 - Besucher schreiben Bewertungen (z. B. „Klo-Situation katastrophal, 2/5“)
 
@@ -178,14 +193,15 @@ Jeder Meilenstein wird einzeln umgesetzt: Brainstorming → Design → Plan → 
 |---|---|
 | **M0** | Projekt-Grundgerüst: Phaser 3 + TypeScript + Vite, leere Szene, GitHub-Actions-Deployment auf GitHub Pages, erfolgreich online erreichbar |
 | **M1** | Wiese mit Raster, Kamera verschieben und zoomen, Wege per Klick und Ziehen bauen und abreißen |
-| **M2** | Objekte platzieren: Bühne, Bierstand, Klo (mit Vorschau, Drehen, Budget und Kosten) |
-| **M3** | Besucher: laufen auf Wegen, haben Bedürfnisse, suchen passende Angebote auf |
-| **M4** | Wirtschaft: Einnahmen und Ausgaben, Ticketpreis, Geldanzeige |
-| **M5** | Phasen-System: Planung → Vorbereitung → Festivalwoche → Abbau, Jahresabschluss |
-| **M6** | Ruf und Wachstum über die Jahre, erste Freischaltungen |
-| **M7** | Bands buchen, Personal einstellen |
-| **M8** | Ereignisse, Tag-Nacht-Zyklus, Speichern/Laden |
-| **M9** | Echte Pixel-Grafiken statt Platzhalter, Sound und Musik |
+| **M2** | Geländebereiche: Campingplatz, Bühnengelände und Backstage auf dem Gelände festlegen |
+| **M3** | Objekte platzieren: Bühne, Bierstand, Klo (mit Vorschau, Drehen, Budget und Kosten) |
+| **M4** | Besucher: laufen frei über das Gelände, haben Bedürfnisse, suchen passende Angebote auf |
+| **M5** | Wirtschaft: Einnahmen und Ausgaben, Ticketpreis, Geldanzeige |
+| **M6** | Phasen-System: Planung → Vorbereitung → Festivalwoche → Abbau, Jahresabschluss |
+| **M7** | Ruf und Wachstum über die Jahre, erste Freischaltungen |
+| **M8** | Bands buchen, Personal einstellen |
+| **M9** | Ereignisse, Tag-Nacht-Zyklus, Speichern/Laden |
+| **M10** | Echte Pixel-Grafiken statt Platzhalter, Sound und Musik |
 
 ---
 
