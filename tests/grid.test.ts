@@ -47,3 +47,64 @@ describe('Grid', () => {
   });
   it('isPath außerhalb ist false', () => expect(new Grid(4, 4).isPath(10, 10)).toBe(false));
 });
+
+describe('Grid – Bauten', () => {
+  it('startet ohne Bauten', () => {
+    const g = new Grid(10, 10);
+    expect(g.structureAt(0, 0)).toBe('none');
+    expect(g.gateOrientationAt(0, 0)).toBeNull();
+    expect(g.isFenceLike(0, 0)).toBe(false);
+    expect(g.structureAt(-1, 0)).toBe('none');
+  });
+  it('apply setzt Zaun und Durchgang mit Ausrichtung', () => {
+    const g = new Grid(10, 10);
+    const changed = g.apply([
+      { x: 1, y: 1, structure: 'fence' },
+      { x: 2, y: 1, structure: 'staffGate', orientation: 'horizontal', path: true },
+    ]);
+    expect(changed).toEqual([{ x: 1, y: 1 }, { x: 2, y: 1 }]);
+    expect(g.structureAt(2, 1)).toBe('staffGate');
+    expect(g.gateOrientationAt(2, 1)).toBe('horizontal');
+    expect(g.isPath(2, 1)).toBe(true);
+    expect(g.isFenceLike(1, 1)).toBe(true);
+    expect(g.isFenceLike(2, 1)).toBe(true);
+    expect(g.gateOrientationAt(1, 1)).toBeNull();
+  });
+  it('Durchgang ohne Ausrichtung wirft', () => {
+    expect(() => new Grid(5, 5).apply([{ x: 1, y: 1, structure: 'visitorGate' }])).toThrow(/Ausrichtung/);
+  });
+  it('Zaun ersetzt Durchgang und löscht die Ausrichtung', () => {
+    const g = new Grid(5, 5);
+    g.apply([{ x: 1, y: 1, structure: 'visitorGate', orientation: 'vertical' }]);
+    g.apply([{ x: 1, y: 1, structure: 'fence' }]);
+    expect(g.gateOrientationAt(1, 1)).toBeNull();
+  });
+  it('apply überspringt Felder ohne Änderung und außerhalb, meldet einmal', () => {
+    const g = new Grid(10, 10);
+    g.apply([{ x: 1, y: 1, structure: 'fence' }]);
+    const listener = vi.fn();
+    g.onChange(listener);
+    const changed = g.apply([
+      { x: 1, y: 1, structure: 'fence' },
+      { x: 20, y: 1, structure: 'fence' },
+      { x: 3, y: 3, structure: 'fence' },
+    ]);
+    expect(changed).toEqual([{ x: 3, y: 3 }]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith([{ x: 3, y: 3 }]);
+  });
+  it('clear entfernt Weg und Bau, lässt Nachbarn stehen', () => {
+    const g = new Grid(10, 10);
+    g.apply([
+      { x: 1, y: 1, structure: 'fence' },
+      { x: 2, y: 1, structure: 'visitorGate', orientation: 'horizontal' },
+      { x: 3, y: 1, structure: 'fence' },
+      { x: 5, y: 5, path: true },
+    ]);
+    expect(g.clear([{ x: 1, y: 1 }, { x: 5, y: 5 }, { x: 7, y: 7 }])).toEqual([{ x: 1, y: 1 }, { x: 5, y: 5 }]);
+    expect(g.structureAt(1, 1)).toBe('none');
+    expect(g.isPath(5, 5)).toBe(false);
+    expect(g.structureAt(2, 1)).toBe('visitorGate');
+    expect(g.gateOrientationAt(2, 1)).toBe('horizontal');
+  });
+});
