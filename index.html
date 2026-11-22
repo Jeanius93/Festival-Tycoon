@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Festival Tycoon</title>
+    <style>
+      html,
+      body,
+      #game {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #558b2f;
+      }
+      /* Nie 0 Pixel groß werden lassen: Phaser stürzt sonst bei einem ganz
+         flachen Fenster ab und erholt sich bis zum Neuladen nicht mehr. */
+      #game {
+        min-width: 1px;
+        min-height: 1px;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
