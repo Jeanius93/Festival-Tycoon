@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Grid } from '../src/building/grid';
-import { DIR, pathMask } from '../src/building/autotile';
+import { DIR, fenceMask, pathMask } from '../src/building/autotile';
 
 describe('pathMask', () => {
   it('einzelnes Feld → 0', () => {
@@ -22,5 +22,18 @@ describe('pathMask', () => {
     const g = new Grid(5, 5);
     g.applyPath([{ x: 0, y: 0 }, { x: 1, y: 0 }], true);
     expect(pathMask(g, 0, 0)).toBe(DIR.E);
+  });
+});
+
+describe('fenceMask', () => {
+  it('zählt Zaun und Durchgänge, keine Wege', () => {
+    const g = new Grid(10, 10);
+    g.apply([
+      { x: 5, y: 5, structure: 'fence' },
+      { x: 5, y: 4, structure: 'fence' },
+      { x: 6, y: 5, structure: 'staffGate', orientation: 'horizontal' },
+      { x: 5, y: 6, path: true },
+    ]);
+    expect(fenceMask(g, 5, 5)).toBe(DIR.N | DIR.E);
   });
 });
