@@ -9,6 +9,9 @@ export const MIN_VIEW = { width: 320, height: 180 };
 /** Stärkste Vergrößerung, auch auf sehr großen Bildschirmen. */
 export const MAX_ZOOM = 4;
 
+/** Größe des Grundstücks in Feldern. */
+export const FIELD = { width: 64, height: 48 } as const;
+
 export const GAME_TITLE = 'Festival Tycoon';
 
 /** Warme, gemütliche Grundfarben (Platzhalter bis zu den echten Grafiken). */
