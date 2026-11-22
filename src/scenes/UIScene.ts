@@ -4,7 +4,7 @@ import { computeZoom } from '../core/zoom';
 import type { BuildTool, ToolMode } from '../building/buildTool';
 import { TOOL_HINTS, TOOL_LABELS } from '../ui/hints';
 
-const MODES: readonly ToolMode[] = ['view', 'path', 'demolish'];
+const MODES: readonly ToolMode[] = ['view', 'path', 'fence', 'visitorGate', 'staffGate', 'demolish'];
 const toCss = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
 
 interface ToolButton {
