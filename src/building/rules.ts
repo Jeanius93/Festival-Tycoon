@@ -31,11 +31,12 @@ export function verdict(grid: Grid, kind: BuildKind, x: number, y: number): Verd
       if (structure !== 'none') return 'skip';
       return path ? 'blocked' : 'build';
     case 'visitorGate':
-      if (placementOrientation(grid, x, y) === null || path) return 'blocked';
-      return structure === 'visitorGate' ? 'skip' : 'build';
     case 'staffGate':
-      if (placementOrientation(grid, x, y) === null) return 'blocked';
-      return structure === 'staffGate' ? 'skip' : 'build';
+      if (structure === kind) return 'skip';
+      if (kind === 'visitorGate' && path) return 'blocked';
+      // Umwandeln eines vorhandenen Durchgangs: Die Regel „Zaun auf zwei Seiten“ gilt nur beim Setzen.
+      if (structure === 'visitorGate' || structure === 'staffGate') return 'build';
+      return placementOrientation(grid, x, y) === null ? 'blocked' : 'build';
   }
 }
 
@@ -43,7 +44,8 @@ export function verdict(grid: Grid, kind: BuildKind, x: number, y: number): Verd
 export function changeFor(grid: Grid, kind: BuildKind, x: number, y: number): CellChange {
   if (kind === 'path') return { x, y, path: true };
   if (kind === 'fence') return { x, y, structure: 'fence' };
-  const orientation = placementOrientation(grid, x, y);
+  // Ein vorhandener Durchgang behält beim Umwandeln seine Ausrichtung.
+  const orientation = grid.gateOrientationAt(x, y) ?? placementOrientation(grid, x, y);
   if (!orientation) throw new Error('Durchgang ohne Zaun auf zwei gegenüberliegenden Seiten');
   return { x, y, structure: kind, orientation };
 }

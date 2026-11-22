@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS, TILE_SIZE } from '../config';
 import { DIR } from '../building/autotile';
+import { fenceRects } from './fenceShape';
 
 export const TEXTURE_KEYS = {
   grass: 'grass',
@@ -99,13 +100,9 @@ function drawPath(g: Phaser.GameObjects.Graphics, ox: number, mask: number): voi
 
 /** Zaunstück: Pfosten in der Mitte plus zwei Latten zu jedem verbundenen Nachbarn. */
 function drawFence(g: Phaser.GameObjects.Graphics, ox: number, mask: number): void {
-  const rails: Array<[number, number, number, number]> = [];
-  if (mask & DIR.N) rails.push([6, 0, 1, 7], [9, 0, 1, 7]);
-  if (mask & DIR.S) rails.push([6, 9, 1, 7], [9, 9, 1, 7]);
-  if (mask & DIR.W) rails.push([0, 6, 7, 1], [0, 9, 7, 1]);
-  if (mask & DIR.E) rails.push([9, 6, 7, 1], [9, 9, 7, 1]);
+  const { rails, shadows } = fenceRects(mask);
   g.fillStyle(COLORS.fenceShade);
-  for (const [x, y, w, h] of rails) g.fillRect(ox + x + 1, y + 1, w, h);
+  for (const [x, y, w, h] of shadows) g.fillRect(ox + x, y, w, h);
   g.fillStyle(COLORS.fenceRail);
   for (const [x, y, w, h] of rails) g.fillRect(ox + x, y, w, h);
   g.fillStyle(COLORS.fenceShade);

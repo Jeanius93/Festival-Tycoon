@@ -105,3 +105,19 @@ describe('changeFor', () => {
     expect(changeFor(make(), 'fence', 1, 1)).toEqual({ x: 1, y: 1, structure: 'fence' });
   });
 });
+
+describe('Umwandeln vorhandener Durchgänge', () => {
+  it('klappt auch, wenn ein Nachbarzaun abgerissen wurde', () => {
+    const g = make(fence(1, 2), { x: 2, y: 2, structure: 'visitorGate', orientation: 'horizontal' });
+    expect(verdict(g, 'staffGate', 2, 2)).toBe('build');
+    expect(changeFor(g, 'staffGate', 2, 2)).toEqual({ x: 2, y: 2, structure: 'staffGate', orientation: 'horizontal' });
+  });
+  it('behält die gespeicherte Ausrichtung', () => {
+    const g = make(fence(2, 1), fence(2, 3), { x: 2, y: 2, structure: 'staffGate', orientation: 'horizontal' });
+    expect(changeFor(g, 'visitorGate', 2, 2)).toEqual({ x: 2, y: 2, structure: 'visitorGate', orientation: 'horizontal' });
+  });
+  it('Tor mit Weg wird auch ohne Nachbarzaun nicht zur Schleuse', () => {
+    const g = make({ x: 2, y: 2, structure: 'staffGate', orientation: 'horizontal', path: true });
+    expect(verdict(g, 'visitorGate', 2, 2)).toBe('blocked');
+  });
+});
