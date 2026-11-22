@@ -19,6 +19,22 @@ Jeder Pull Request wird vorher zur Probe gebaut und getestet (✓ oder ✗ im Pu
 Wurde schon gemergt, bevor diese Einstellung gesetzt war, ist der erste Deploy fehlgeschlagen.
 Dann einmal unter **Actions → Deploy → Run workflow** neu starten.
 
+## Steuerung
+
+| Eingabe | Aktion |
+|---|---|
+| **WASD** / **Pfeiltasten** | Kamera verschieben |
+| **Mittlere Maustaste + Ziehen** | Kamera verschieben |
+| Maus an den **Bildschirmrand** | Kamera fährt mit |
+| **Mausrad** | Zoomen (in Stufen, zum Mauszeiger hin) |
+| Werkzeugleiste unten | **Ansehen** (nur schauen, Ziehen verschiebt die Kamera), **Weg**, **Abreißen** |
+| **Weg:** linke Maustaste + Ziehen | Vorschau in L-Form, beim Loslassen wird gebaut |
+| **R** | Ecke der L-Form drehen |
+| **Rechtsklick** | Ziehen abbrechen; ohne Ziehen zurück zu „Ansehen“ |
+| **Entf** | Abreißen-Modus ein/aus (rote Vorschau) |
+| **Esc** | zurück zu „Ansehen“ |
+| **G** | Raster ein-/ausblenden |
+
 ## Lokal starten (für Entwickler)
 
 ```bash

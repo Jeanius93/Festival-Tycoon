@@ -14,7 +14,7 @@
 | Meilenstein | Stand |
 |---|---|
 | M0 – Grundgerüst & Deployment | ✅ fertig, gemergt, läuft auf GitHub Pages |
-| M1 – Wiese, Raster, Kamera, Wege | 🔧 in Arbeit (Design-Dokument geschrieben) |
+| M1 – Wiese, Raster, Kamera, Wege | ✅ fertig (Pull Request; nach dem Merge auf GitHub Pages spielbar) |
 | M2 bis M10 | offen |
 
 ## Vor jeder Aufgabe

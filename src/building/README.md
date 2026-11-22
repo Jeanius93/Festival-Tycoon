@@ -1,3 +1,3 @@
 # Bau-System
 
-Hier entsteht ab M1/M2 das Bau-System: Raster, Wege, Zäune und das Platzieren von Objekten.
+Grundstück als Datenmodell (`grid.ts`), L-Linie (`lineTool.ts`), passende Wegstücke (`autotile.ts`) und das Bau-Werkzeug (`buildTool.ts`), alles ohne Phaser und mit Tests; ab M3 kommen Objekte dazu.

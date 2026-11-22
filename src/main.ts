@@ -3,6 +3,7 @@ import { COLORS } from './config';
 import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
 import { WorldScene } from './scenes/WorldScene';
+import { UIScene } from './scenes/UIScene';
 
 // Einstiegspunkt: erzeugt das Spiel, das immer das ganze Fenster füllt.
 new Phaser.Game({
@@ -17,5 +18,5 @@ new Phaser.Game({
     width: window.innerWidth,
     height: window.innerHeight,
   },
-  scene: [BootScene, TitleScene, WorldScene],
+  scene: [BootScene, TitleScene, WorldScene, UIScene],
 });

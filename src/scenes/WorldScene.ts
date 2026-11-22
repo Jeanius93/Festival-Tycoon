@@ -13,6 +13,7 @@ import { Grid, type Cell } from '../building/grid';
 import { BuildTool } from '../building/buildTool';
 import { pathMask } from '../building/autotile';
 import { computeZoom } from '../core/zoom';
+import type { UIScene } from './UIScene';
 import { clampCenter, edgeScrollDirection, nextZoomLevel, worldToCell, zoomAroundPoint } from '../core/camera';
 
 // Jede Ebene hat ihr eigenes Tileset; getrennte Nummernbereiche verhindern Verwechslungen.
@@ -64,6 +65,7 @@ export class WorldScene extends Phaser.Scene {
     this.createMap();
     this.setupCamera();
     this.setupInput();
+    this.scene.launch('UI', { tool: this.tool });
 
     const offGrid = this.grid.onChange((changed) => this.redrawPaths(changed));
     const offTool = this.tool.onChange(() => this.redrawPreview());
@@ -72,6 +74,7 @@ export class WorldScene extends Phaser.Scene {
       offGrid();
       offTool();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.applyCamera, this);
+      this.scene.stop('UI');
     });
   }
 
@@ -227,9 +230,10 @@ export class WorldScene extends Phaser.Scene {
     this.applyCamera();
   }
 
-  /** Ist die Maus über der Werkzeugleiste? (wird mit der Oberfläche verbunden) */
-  private isOverUi(_x: number, _y: number): boolean {
-    return false;
+  /** Ist die Maus über der Werkzeugleiste? Dann baut ein Klick nichts. */
+  private isOverUi(x: number, y: number): boolean {
+    const ui = this.scene.get('UI') as UIScene | null;
+    return ui !== null && this.scene.isActive('UI') && ui.containsPoint(x, y);
   }
 
   /** Zeichnet geänderte Wegfelder und ihre Nachbarn neu (Wegstücke verbinden sich). */
