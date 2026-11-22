@@ -15,7 +15,7 @@
 |---|---|
 | M0 – Grundgerüst & Deployment | ✅ fertig, gemergt, läuft auf GitHub Pages |
 | M1 – Wiese, Raster, Kamera, Wege | ✅ fertig, gemergt, läuft auf GitHub Pages |
-| M2 – Geländebereiche (Zäune & Durchgänge) | 🟡 in Arbeit (Design freigegeben, Plan wartet auf Freigabe) |
+| M2 – Geländebereiche (Zäune & Durchgänge) | ✅ fertig (Pull Request; nach dem Merge auf GitHub Pages spielbar) |
 | M3 bis M10 | offen |
 
 ## Vor jeder Aufgabe
