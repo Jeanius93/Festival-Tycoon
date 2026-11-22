@@ -22,11 +22,23 @@ Ein gemütliches **Tycoon-Spiel**, in dem man ein **Rockfestival** organisiert, 
 | **Bühnengelände** | Gäste feiern | Bühne, Essensstände, Bierbuden |
 | **Backstage** | Künstler, Technik, Logistik | Künstlerbereich, Technik, Anlieferung |
 
+- Die Bereiche werden **nicht markiert oder gemalt**, sondern entstehen wie auf einem echten Festival **durch Zäune**: Bühnengelände und Backstage sind eingezäunt, der **Campingplatz** ist die offene Wiese außerhalb der Zäune.
+- Wer einen Bereich betreten darf, regelt die Art des Durchgangs im Zaun (siehe 1.3). Wofür ein Bereich da ist, ergibt sich aus dem, was man hineinbaut (Bühne, Bierbude, Künstlerzelt).
+- **Tagesrhythmus:** Die Gäste sind nachts und morgens auf dem Campingplatz (zelten, Müll, Dixi-Klos, Essplätze) und nachmittags bis nachts auf dem Bühnengelände (trinken, feiern, Bands schauen).
+- **Personal** (Security, Reinigung, Technik) und Künstler schlafen im Backstage, das Personal arbeitet aber auf dem ganzen Gelände.
+
 ### 1.2 Wege
 
 - Besucher laufen **frei über die Wiese**, wie auf einem echten Festival.
 - **Wege sind Versorgungsadern:** Über sie kommen Lieferungen (Bier, Essen) zu den Ständen, Technik zur Bühne und Künstler in den Backstage-Bereich. Ein Stand ohne Wegverbindung wird schlecht oder gar nicht beliefert.
 - Bei Regen wird die Wiese matschig, Wege bleiben gut befahrbar.
+
+### 1.3 Zäune und Durchgänge
+
+- Ein Zaun belegt ganze Felder und wird wie ein Weg per Ziehen gebaut.
+- **Besucher-Schleuse:** Gäste und Personal gehen zu Fuß hindurch. Kein Weg, keine Fahrzeuge.
+- **Personal-Tor:** Nur Personal und Lieferwagen kommen hindurch. Ein Weg darf hindurchführen; nur so führt ein Weg durch einen Zaun.
+- Später denkbar: breitere Einlässe, VIP-Zugang, verschiedene Zaunarten.
 
 ---
 
@@ -193,7 +205,7 @@ Jeder Meilenstein wird einzeln umgesetzt: Brainstorming → Design → Plan → 
 |---|---|
 | **M0** | Projekt-Grundgerüst: Phaser 3 + TypeScript + Vite, leere Szene, GitHub-Actions-Deployment auf GitHub Pages, erfolgreich online erreichbar |
 | **M1** | Wiese mit Raster, Kamera verschieben und zoomen, Wege per Klick und Ziehen bauen und abreißen |
-| **M2** | Geländebereiche: Campingplatz, Bühnengelände und Backstage auf dem Gelände festlegen |
+| **M2** | Geländebereiche: Zäune, Besucher-Schleusen und Personal-Tore (Bühnengelände und Backstage einzäunen, Campingplatz ist die offene Wiese) |
 | **M3** | Objekte platzieren: Bühne, Bierstand, Klo (mit Vorschau, Drehen, Budget und Kosten) |
 | **M4** | Besucher: laufen frei über das Gelände, haben Bedürfnisse, suchen passende Angebote auf |
 | **M5** | Wirtschaft: Einnahmen und Ausgaben, Ticketpreis, Geldanzeige |

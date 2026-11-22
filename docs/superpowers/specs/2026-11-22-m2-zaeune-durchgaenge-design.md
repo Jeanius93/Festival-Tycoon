@@ -2,7 +2,7 @@
 
 **Datum:** 2026-11-22
 **Meilenstein:** M2 (siehe `GAME_DESIGN.md`, Abschnitt 11)
-**Status:** Entwurf, wartet auf Freigabe durch den Nutzer
+**Status:** Vom Nutzer freigegeben (2026-11-22)
 
 ---
 
