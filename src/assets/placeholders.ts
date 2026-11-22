@@ -125,7 +125,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   );
 
   const grid = scene.make.graphics({ x: 0, y: 0 }, false);
-  grid.fillStyle(COLORS.grid, 0.35);
+  grid.fillStyle(COLORS.grid, 0.22);
   grid.fillRect(0, 0, T, 1);
   grid.fillRect(0, 1, 1, T - 1);
   grid.generateTexture(TEXTURE_KEYS.gridCell, T, T);
