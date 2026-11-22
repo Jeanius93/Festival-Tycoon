@@ -39,6 +39,16 @@ export function edgeScrollDirection(
   pointerInside: boolean,
 ): { dx: -1 | 0 | 1; dy: -1 | 0 | 1 } {
   if (!pointerInside) return { dx: 0, dy: 0 };
+  // Beim Ziehen meldet der Browser auch Positionen außerhalb des Fensters: dort nicht scrollen.
+  if (px < 0 || py < 0 || px >= viewW || py >= viewH) return { dx: 0, dy: 0 };
   const axis = (p: number, size: number): -1 | 0 | 1 => (p < margin ? -1 : p >= size - margin ? 1 : 0);
   return { dx: axis(px, viewW), dy: axis(py, viewH) };
+}
+
+/** Bit der Browser-Tastenmaske (pointer.buttons) für eine Maustaste (0 = links, 1 = Mitte, 2 = rechts). */
+const BUTTON_BITS: Record<number, number> = { 0: 1, 1: 4, 2: 2 };
+
+/** Ist die Maustaste laut Tastenmaske des Browsers noch gedrückt? */
+export function isButtonHeld(buttons: number, button: number): boolean {
+  return (buttons & (BUTTON_BITS[button] ?? 0)) !== 0;
 }

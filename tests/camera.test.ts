@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextZoomLevel, clampCenter, zoomAroundPoint, worldToCell, edgeScrollDirection } from '../src/core/camera';
+import { nextZoomLevel, clampCenter, zoomAroundPoint, worldToCell, edgeScrollDirection, isButtonHeld } from '../src/core/camera';
 
 describe('nextZoomLevel', () => {
   it('rein und raus', () => {
@@ -50,4 +50,27 @@ describe('edgeScrollDirection', () => {
   it('Mitte → keine Bewegung', () => expect(edgeScrollDirection(400, 300, 800, 600, 16, true)).toEqual({ dx: 0, dy: 0 }));
   it('Maus außerhalb des Fensters → keine Bewegung', () =>
     expect(edgeScrollDirection(0, 0, 800, 600, 16, false)).toEqual({ dx: 0, dy: 0 }));
+  it('Koordinaten außerhalb des Fensters (beim Ziehen) → keine Bewegung', () => {
+    expect(edgeScrollDirection(-40, 300, 800, 600, 16, true)).toEqual({ dx: 0, dy: 0 });
+    expect(edgeScrollDirection(400, 600, 800, 600, 16, true)).toEqual({ dx: 0, dy: 0 });
+    expect(edgeScrollDirection(850, 650, 800, 600, 16, true)).toEqual({ dx: 0, dy: 0 });
+  });
+});
+
+describe('isButtonHeld', () => {
+  // pointer.buttons: Bitmaske des Browsers (1 = links, 2 = rechts, 4 = Mitte)
+  it('linke Taste (0) gedrückt / losgelassen', () => {
+    expect(isButtonHeld(1, 0)).toBe(true);
+    expect(isButtonHeld(0, 0)).toBe(false);
+    expect(isButtonHeld(4, 0)).toBe(false);
+  });
+  it('mittlere Taste (1) gehört zu Bit 4', () => {
+    expect(isButtonHeld(4, 1)).toBe(true);
+    expect(isButtonHeld(5, 1)).toBe(true);
+    expect(isButtonHeld(1, 1)).toBe(false);
+  });
+  it('rechte Taste (2) gehört zu Bit 2', () => {
+    expect(isButtonHeld(2, 2)).toBe(true);
+    expect(isButtonHeld(4, 2)).toBe(false);
+  });
 });

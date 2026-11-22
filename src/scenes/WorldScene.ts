@@ -14,7 +14,14 @@ import { BuildTool } from '../building/buildTool';
 import { pathMask } from '../building/autotile';
 import { computeZoom } from '../core/zoom';
 import type { UIScene } from './UIScene';
-import { clampCenter, edgeScrollDirection, nextZoomLevel, worldToCell, zoomAroundPoint } from '../core/camera';
+import {
+  clampCenter,
+  edgeScrollDirection,
+  isButtonHeld,
+  nextZoomLevel,
+  worldToCell,
+  zoomAroundPoint,
+} from '../core/camera';
 
 // Jede Ebene hat ihr eigenes Tileset; getrennte Nummernbereiche verhindern Verwechslungen.
 const GROUND_GID = 0; // 0 = Wiese, 1 = Rand
@@ -82,6 +89,11 @@ export class WorldScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const pointer = this.input.activePointer;
 
+    // Wird die Maustaste über der Werkzeugleiste losgelassen, kommt das Loslassen hier nicht an.
+    // Deshalb mit der Tastenmaske des Browsers abgleichen (gebaut wird bis zum letzten sichtbaren Feld).
+    if (this.panButton !== null && !isButtonHeld(pointer.buttons, this.panButton)) this.panButton = null;
+    if (this.tool.isDragging && !isButtonHeld(pointer.buttons, 0)) this.tool.pointerUp();
+
     // Kamera per Tastatur und Bildschirmrand verschieben
     const k = this.keys;
     let dx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0);
@@ -105,9 +117,12 @@ export class WorldScene extends Phaser.Scene {
       this.applyCamera();
     }
 
-    // Feld unter der Maus an das Werkzeug melden (Vorschau läuft auch beim Scrollen mit)
-    const world = cam.getWorldPoint(pointer.x, pointer.y);
-    this.tool.pointerMove(worldToCell(world.x, world.y, TILE_SIZE, BORDER_TILES));
+    // Feld unter der Maus an das Werkzeug melden (Vorschau läuft auch beim Scrollen mit).
+    // Über der Werkzeugleiste bleibt das zuletzt sichtbare Feld stehen.
+    if (!this.isOverUi(pointer.x, pointer.y)) {
+      const world = cam.getWorldPoint(pointer.x, pointer.y);
+      this.tool.pointerMove(worldToCell(world.x, world.y, TILE_SIZE, BORDER_TILES));
+    }
   }
 
   private createMap(): void {
