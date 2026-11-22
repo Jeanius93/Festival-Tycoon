@@ -5,12 +5,13 @@ import { TEXTURE_KEYS } from '../assets/placeholders';
 
 const toCss = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
 
-/** Titelbildschirm für M0: Wiese, Titel, Untertitel und Versionsnummer. */
+/** Titelbildschirm: Wiese, Titel, Untertitel, „Spielen“-Schaltfläche und Versionsnummer. */
 export class TitleScene extends Phaser.Scene {
   private grass!: Phaser.GameObjects.TileSprite;
   private title!: Phaser.GameObjects.Text;
   private subtitle!: Phaser.GameObjects.Text;
   private version!: Phaser.GameObjects.Text;
+  private playButton!: Phaser.GameObjects.Text;
 
   constructor() {
     super('Title');
@@ -23,8 +24,21 @@ export class TitleScene extends Phaser.Scene {
       .text(0, 0, GAME_TITLE, { fontFamily: 'monospace', fontStyle: 'bold', color: toCss(COLORS.titleText) })
       .setOrigin(0.5);
     this.subtitle = this.add
-      .text(0, 0, 'M0 – Grundgerüst', { fontFamily: 'monospace', color: toCss(COLORS.titleText) })
+      .text(0, 0, 'M1 – Wiese & Wege', { fontFamily: 'monospace', color: toCss(COLORS.titleText) })
       .setOrigin(0.5);
+    this.playButton = this.add
+      .text(0, 0, '▶ Spielen', {
+        fontFamily: 'monospace',
+        fontStyle: 'bold',
+        color: toCss(COLORS.uiText),
+        backgroundColor: toCss(COLORS.uiButton),
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    this.playButton.on('pointerover', () => this.playButton.setBackgroundColor(toCss(COLORS.uiButtonActive)));
+    this.playButton.on('pointerout', () => this.playButton.setBackgroundColor(toCss(COLORS.uiButton)));
+    this.playButton.on('pointerdown', () => this.scene.start('World'));
+
     this.version = this.add
       .text(0, 0, `v${__APP_VERSION__}`, { fontFamily: 'monospace', color: toCss(COLORS.titleText) })
       .setOrigin(1, 1);
@@ -53,6 +67,10 @@ export class TitleScene extends Phaser.Scene {
 
     this.subtitle.setFontSize(6 * zoom);
     this.subtitle.setPosition(Math.round(width / 2), Math.round(height / 2 + 8 * zoom));
+
+    this.playButton.setFontSize(7 * zoom);
+    this.playButton.setPadding(4 * zoom, 2 * zoom, 4 * zoom, 2 * zoom);
+    this.playButton.setPosition(Math.round(width / 2), Math.round(height / 2 + 24 * zoom));
 
     this.version.setFontSize(4 * zoom);
     this.version.setPosition(width - 4 * zoom, height - 4 * zoom);

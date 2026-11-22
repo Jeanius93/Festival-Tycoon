@@ -8,6 +8,15 @@
   - Bei technischen Entscheidungen erklären, was sie für das Spiel bedeuten, und immer eine Empfehlung geben.
   - Lieber einen Schritt zu viel erklären als einen zu wenig.
 
+## Projektstand
+(Nach jedem Meilenstein aktualisieren. Meilensteine siehe `GAME_DESIGN.md`, Abschnitt 11.)
+
+| Meilenstein | Stand |
+|---|---|
+| M0 – Grundgerüst & Deployment | ✅ fertig, gemergt, läuft auf GitHub Pages |
+| M1 – Wiese, Raster, Kamera, Wege | ✅ fertig (Pull Request; nach dem Merge auf GitHub Pages spielbar) |
+| M2 bis M10 | offen |
+
 ## Vor jeder Aufgabe
 - **`GAME_DESIGN.md` lesen.** Sie ist die Gesamtvision des Spiels und die zentrale Quelle für alle Entscheidungen.
 
