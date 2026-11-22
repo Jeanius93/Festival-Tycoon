@@ -33,11 +33,11 @@ Ein gemütliches **Tycoon-Spiel**, in dem man ein **Rockfestival** organisiert, 
 ## 3. Deployment über GitHub Pages
 
 Ziel: Nach jedem Merge in den Hauptzweig (`main`) ist das Spiel automatisch unter einer festen Web-Adresse spielbar, z. B.
-`https://<github-benutzername>.github.io/festival-tycoon/`
+`https://jeanius93.github.io/Festival-Tycoon/` (Groß-/Kleinschreibung zählt!)
 
 **Umsetzung:**
 - Ein GitHub-Actions-Workflow (`.github/workflows/deploy.yml`) baut das Spiel bei jedem Push auf `main` mit `npm run build` und veröffentlicht den Ordner `dist/` auf GitHub Pages.
-- In der `vite.config.ts` muss der `base`-Pfad auf den Repo-Namen gesetzt werden (z. B. `base: '/festival-tycoon/'`), damit Grafiken und Skripte auf GitHub Pages gefunden werden.
+- In der `vite.config.ts` muss der `base`-Pfad auf den Repo-Namen gesetzt werden (`base: '/Festival-Tycoon/'`, exakt wie der Repo-Name), damit Grafiken und Skripte auf GitHub Pages gefunden werden.
 - Alle Asset-Pfade im Spiel relativ zu diesem Base-Pfad laden.
 - In den Repo-Einstellungen unter **Settings → Pages** als Quelle **„GitHub Actions“** auswählen (einmalig, manuell durch den Nutzer).
 
