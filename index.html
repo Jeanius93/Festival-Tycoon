@@ -15,6 +15,12 @@
         overflow: hidden;
         background: #558b2f;
       }
+      /* Nie 0 Pixel groß werden lassen: Phaser stürzt sonst bei einem ganz
+         flachen Fenster ab und erholt sich bis zum Neuladen nicht mehr. */
+      #game {
+        min-width: 1px;
+        min-height: 1px;
+      }
       canvas {
         display: block;
         image-rendering: pixelated;

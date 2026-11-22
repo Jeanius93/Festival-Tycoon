@@ -16,6 +16,9 @@ Damit das Spiel automatisch veröffentlicht wird, muss einmal Folgendes eingeste
 Danach wird das Spiel bei jedem Merge in `main` automatisch gebaut und veröffentlicht.
 Jeder Pull Request wird vorher zur Probe gebaut und getestet (✓ oder ✗ im Pull Request).
 
+Wurde schon gemergt, bevor diese Einstellung gesetzt war, ist der erste Deploy fehlgeschlagen.
+Dann einmal unter **Actions → Deploy → Run workflow** neu starten.
+
 ## Lokal starten (für Entwickler)
 
 ```bash
