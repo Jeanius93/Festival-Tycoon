@@ -12,6 +12,15 @@ export const MAX_ZOOM = 4;
 /** Größe des Grundstücks in Feldern. */
 export const FIELD = { width: 64, height: 48 } as const;
 
+/** Zoomstufen der Spielwelt (nur ganze Zahlen, damit die Pixel scharf bleiben). */
+export const ZOOM_LEVELS = { min: 1, max: 6 } as const;
+
+/** Kamera-Geschwindigkeit in Bildschirm-Pixeln pro Sekunde. */
+export const CAMERA_SPEED = 600;
+
+/** So nah (in Bildschirm-Pixeln) muss die Maus am Rand sein, damit die Kamera mitfährt. */
+export const EDGE_SCROLL_MARGIN = 16;
+
 export const GAME_TITLE = 'Festival Tycoon';
 
 /** Warme, gemütliche Grundfarben (Platzhalter bis zu den echten Grafiken). */
