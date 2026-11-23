@@ -31,5 +31,6 @@ export function buildingHint(type: BuildingType, verdict: PlacementVerdict | nul
   const keys = 'R: drehen · Rechtsklick: Ansehen';
   if (verdict === 'blocked') return `Kein Platz für ${name} · ${keys}`;
   if (verdict === 'tooExpensive') return `Zu teuer: ${name} kostet ${formatMoney(price)}, Kasse: ${formatMoney(balance)}`;
+  if (verdict === null) return `${name} (${formatMoney(price)}) auf die Wiese stellen · ${keys}`;
   return `Klick: ${name} bauen (${formatMoney(price)}) · ${keys}`;
 }

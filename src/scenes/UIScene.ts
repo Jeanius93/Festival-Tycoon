@@ -5,7 +5,7 @@ import type { BuildTool } from '../building/buildTool';
 import type { Cash } from '../economy/cash';
 import { buildingHint, TOOL_HINTS } from '../ui/hints';
 import { formatMoney } from '../ui/format';
-import { MAIN_MENU, categoryOf, subMenu, type MenuCategory, type MenuEntry } from '../ui/menu';
+import { MAIN_MENU, MenuState, categoryOf, subMenu, type MenuCategory, type MenuEntry } from '../ui/menu';
 
 const toCss = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
 
@@ -31,8 +31,9 @@ export class UIScene extends Phaser.Scene {
   private subEntries: MenuEntry[] = [];
   private hint!: Phaser.GameObjects.Text;
   private cashText!: Phaser.GameObjects.Text;
-  private openCategory: MenuCategory | null = null;
-  private lastSelection = '';
+  private menu = new MenuState();
+  /** Fenstergröße und offene Unterleiste beim letzten Anordnen; nur bei Änderung wird neu angeordnet. */
+  private layoutKey = '';
 
   constructor() {
     super('UI');
@@ -41,8 +42,8 @@ export class UIScene extends Phaser.Scene {
   init(data: { tool: BuildTool; cash: Cash }): void {
     this.tool = data.tool;
     this.cash = data.cash;
-    this.openCategory = null;
-    this.lastSelection = '';
+    this.menu = new MenuState();
+    this.layoutKey = '';
   }
 
   create(): void {
@@ -78,11 +79,11 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setInteractive();
 
-    this.syncOpenCategory();
+    this.menu.syncTool(this.tool.mode, this.tool.buildingType);
     this.refresh();
 
     const offTool = this.tool.onChange(() => {
-      this.syncOpenCategory();
+      this.menu.syncTool(this.tool.mode, this.tool.buildingType);
       this.refresh();
     });
     const offCash = this.cash.onChange(() => this.refresh());
@@ -111,11 +112,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   private onCategory(category: MenuCategory): void {
-    if (category === 'view' || category === 'demolish') {
-      this.tool.setMode(category);
-      return;
-    }
-    this.openCategory = this.openCategory === category ? null : category;
+    this.menu.clickCategory(category);
+    if (category === 'view' || category === 'demolish') this.tool.setMode(category);
     this.refresh();
   }
 
@@ -126,19 +124,8 @@ export class UIScene extends Phaser.Scene {
     else this.tool.setMode(entry.action.mode);
   }
 
-  /**
-   * Hat sich das gewählte Werkzeug geändert (auch per Esc, Entf oder Rechtsklick),
-   * ist genau die Unterleiste seiner Kategorie offen, bzw. keine.
-   */
-  private syncOpenCategory(): void {
-    const selection = `${this.tool.mode}|${this.tool.buildingType}`;
-    if (selection === this.lastSelection) return;
-    this.lastSelection = selection;
-    const category = categoryOf(this.tool.mode, this.tool.buildingType);
-    this.openCategory = subMenu(category).length > 0 ? category : null;
-  }
-
   private onResize(): void {
+    this.layoutKey = '';
     this.refresh();
   }
 
@@ -148,8 +135,41 @@ export class UIScene extends Phaser.Scene {
     return this.tool.mode === action.mode;
   }
 
-  /** Ordnet alles neu an und aktualisiert Beschriftungen, Hervorhebung, Hinweis und Kasse. */
+  /**
+   * Aktualisiert Hervorhebung, Hinweis und Kasse. Neu angeordnet wird nur, wenn sich
+   * Fenstergröße oder offene Unterleiste geändert haben (das Neuzeichnen von Texten ist teuer,
+   * und die Werkzeug-Meldung kommt bei jeder Mausbewegung).
+   */
   private refresh(): void {
+    const key = `${this.scale.width}x${this.scale.height}|${this.menu.openCategory}`;
+    if (key !== this.layoutKey) {
+      this.layoutKey = key;
+      this.layout();
+    }
+    const activeCategory = categoryOf(this.tool.mode, this.tool.buildingType);
+    for (const button of this.mainButtons) {
+      const color =
+        button.category === activeCategory
+          ? COLORS.uiButtonActive
+          : button.category === this.menu.openCategory
+            ? COLORS.uiButtonOpen
+            : COLORS.uiButton;
+      button.box.setFillStyle(color);
+    }
+    this.subEntries.forEach((entry, i) =>
+      this.subButtons[i].box.setFillStyle(this.isActive(entry) ? COLORS.uiButtonActive : COLORS.uiButton),
+    );
+    const preview = this.tool.preview;
+    const hintText =
+      this.tool.mode === 'building' && this.tool.buildingType
+        ? buildingHint(this.tool.buildingType, preview?.kind === 'building' ? preview.verdict : null, this.cash.balance)
+        : TOOL_HINTS[this.tool.mode];
+    this.hint.setText(hintText);
+    this.cashText.setText(`Kasse: ${formatMoney(this.cash.balance)}`);
+  }
+
+  /** Ordnet Leisten, Hinweis und Kasse passend zur Fenstergröße an. */
+  private layout(): void {
     const width = this.scale.width;
     const height = this.scale.height;
     const u = computeZoom(width, height);
@@ -164,21 +184,12 @@ export class UIScene extends Phaser.Scene {
     const mainX = Math.round((width - mainPanelW) / 2);
     const mainY = height - mainPanelH;
     this.placePanel(this.mainPanel, mainX, mainY, mainPanelW, mainPanelH);
-    const activeCategory = categoryOf(this.tool.mode, this.tool.buildingType);
     this.mainButtons.forEach((button, i) => {
-      const x = mainX + pad + i * (buttonW + gap);
-      this.placeButton(button, x, mainY + pad, buttonW, mainH, 6 * u);
-      const color =
-        button.category === activeCategory
-          ? COLORS.uiButtonActive
-          : button.category === this.openCategory
-            ? COLORS.uiButtonOpen
-            : COLORS.uiButton;
-      button.box.setFillStyle(color);
+      this.placeButton(button, mainX + pad + i * (buttonW + gap), mainY + pad, buttonW, mainH, 6 * u);
     });
 
     // Unterleiste direkt darüber
-    this.subEntries = this.openCategory ? subMenu(this.openCategory) : [];
+    this.subEntries = this.menu.openCategory ? subMenu(this.menu.openCategory) : [];
     const count = this.subEntries.length;
     const hasPrices = this.subEntries.some((e) => e.price !== null);
     const subH = (hasPrices ? 20 : 14) * u;
@@ -195,24 +206,14 @@ export class UIScene extends Phaser.Scene {
       if (!entry) return;
       button.label.setText(entry.price === null ? entry.label : `${entry.label}\n${formatMoney(entry.price)}`);
       this.placeButton(button, subX + pad + i * (buttonW + gap), subY + pad, buttonW, subH, 6 * u);
-      button.box.setFillStyle(this.isActive(entry) ? COLORS.uiButtonActive : COLORS.uiButton);
     });
 
     // Hinweis über der obersten sichtbaren Leiste
-    const preview = this.tool.preview;
-    const hintText =
-      this.tool.mode === 'building' && this.tool.buildingType
-        ? buildingHint(
-            this.tool.buildingType,
-            preview?.kind === 'building' ? preview.verdict : null,
-            this.cash.balance,
-          )
-        : TOOL_HINTS[this.tool.mode];
-    this.hint.setText(hintText).setFontSize(4 * u).setPadding(2 * u, u, 2 * u, u);
+    this.hint.setFontSize(4 * u).setPadding(2 * u, u, 2 * u, u);
     this.hint.setPosition(Math.round(width / 2), (count > 0 ? subY : mainY) - u);
 
     // Kasse oben rechts
-    this.cashText.setText(`Kasse: ${formatMoney(this.cash.balance)}`).setFontSize(6 * u).setPadding(3 * u, 2 * u, 3 * u, 2 * u);
+    this.cashText.setFontSize(6 * u).setPadding(3 * u, 2 * u, 3 * u, 2 * u);
     this.cashText.setPosition(width - 2 * u, 2 * u);
   }
 

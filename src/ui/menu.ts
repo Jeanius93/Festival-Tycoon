@@ -46,3 +46,31 @@ export function categoryOf(mode: ToolMode, buildingType: BuildingType | null): M
   if (mode === 'building' && buildingType) return CATALOG[buildingType].category;
   return mode === 'building' ? 'view' : 'paths';
 }
+
+/**
+ * Welche Unterleiste offen ist. Ein Klick auf eine Kategorie öffnet bzw. schließt sie,
+ * Ansehen und Abreißen schließen sie. Wechselt das gewählte Werkzeug (auch per Esc, Entf
+ * oder Rechtsklick), ist genau die Unterleiste seiner Kategorie offen. Mausbewegungen
+ * ändern die Auswahl nicht und lassen eine von Hand geöffnete Unterleiste stehen.
+ */
+export class MenuState {
+  private open: MenuCategory | null = null;
+  private lastSelection: string | null = null;
+
+  get openCategory(): MenuCategory | null {
+    return this.open;
+  }
+
+  clickCategory(category: MenuCategory): void {
+    if (subMenu(category).length === 0) this.open = null;
+    else this.open = this.open === category ? null : category;
+  }
+
+  syncTool(mode: ToolMode, buildingType: BuildingType | null): void {
+    const selection = `${mode}|${buildingType}`;
+    if (selection === this.lastSelection) return;
+    this.lastSelection = selection;
+    const category = categoryOf(mode, buildingType);
+    this.open = subMenu(category).length > 0 ? category : null;
+  }
+}
