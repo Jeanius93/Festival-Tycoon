@@ -20,6 +20,8 @@ export function placementOrientation(grid: Grid, x: number, y: number): Orientat
 /** Die eine Bauregel, die Vorschau und Bauen gemeinsam nutzen. */
 export function verdict(grid: Grid, kind: BuildKind, x: number, y: number): Verdict {
   if (!grid.inBounds(x, y)) return 'blocked';
+  // Auf Gebäudefeldern wird weder Weg noch Zaun noch Durchgang gebaut.
+  if (grid.buildingAt(x, y)) return 'blocked';
   const structure = grid.structureAt(x, y);
   const path = grid.isPath(x, y);
   switch (kind) {

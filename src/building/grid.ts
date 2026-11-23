@@ -1,4 +1,5 @@
 import type { BuildingType } from './catalog';
+import { rectCells } from './placement';
 
 /** Ein Feld des Grundstücks (0 … Breite-1, 0 … Höhe-1). */
 export interface Cell {
@@ -123,7 +124,7 @@ export class Grid {
    * Bauregeln prüft placement.ts vorher; hier ist ein belegtes oder äußeres Feld ein Programmierfehler.
    */
   addBuilding(b: Omit<Building, 'id'>): Building {
-    const cells = this.cellsOf(b);
+    const cells = rectCells(b);
     for (const { x, y } of cells) {
       if (!this.inBounds(x, y)) throw new Error(`Gebäude ragt aus dem Grundstück (${x}/${y})`);
       if (this.buildingIds[y * this.width + x] !== 0) throw new Error(`Feld ${x}/${y} ist schon belegt`);
@@ -140,7 +141,7 @@ export class Grid {
     const building = this.buildingList.get(id);
     if (!building) return null;
     this.buildingList.delete(id);
-    const cells = this.cellsOf(building);
+    const cells = rectCells(building);
     for (const { x, y } of cells) this.buildingIds[y * this.width + x] = 0;
     this.notify(cells);
     return building;
@@ -183,12 +184,6 @@ export class Grid {
   private notify(changed: Cell[]): void {
     if (changed.length === 0) return;
     for (const listener of this.listeners) listener(changed);
-  }
-
-  private cellsOf(b: { x: number; y: number; width: number; height: number }): Cell[] {
-    const cells: Cell[] = [];
-    for (let y = b.y; y < b.y + b.height; y++) for (let x = b.x; x < b.x + b.width; x++) cells.push({ x, y });
-    return cells;
   }
 
   private codeAt(x: number, y: number): number {
