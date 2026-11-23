@@ -27,7 +27,11 @@ Dann einmal unter **Actions → Deploy → Run workflow** neu starten.
 | **Mittlere Maustaste + Ziehen** | Kamera verschieben |
 | Maus an den **Bildschirmrand** | Kamera fährt mit |
 | **Mausrad** | Zoomen (in Stufen, zum Mauszeiger hin) |
-| Werkzeugleiste unten | **Ansehen** (nur schauen, Ziehen verschiebt die Kamera), **Weg**, **Abreißen** |
+| Bau-Menü unten | **Ansehen** (nur schauen, Ziehen verschiebt die Kamera), **Wege & Zäune** (Weg, Zaun, Schleuse, Tor, Zeltfläche), **Bühnen**, **Stände**, **Sanitär**, **Abreißen** |
+| **Zeltfläche:** linke Maustaste + Ziehen | Rechteck abstecken; braucht einen Weg zur Straße am unteren Rand |
+| **Festival starten** (oben) | Gäste reisen mit dem Auto an; das Festival dauert 3 Tage |
+| **Leertaste** | Pause (während des Festivals) |
+| **1 / 2 / 3** | Tempo normal / doppelt / vierfach (während des Festivals) |
 | **Weg:** linke Maustaste + Ziehen | Vorschau in L-Form, beim Loslassen wird gebaut |
 | **R** | Ecke der L-Form drehen |
 | **Rechtsklick** | Ziehen abbrechen; ohne Ziehen zurück zu „Ansehen“ |
