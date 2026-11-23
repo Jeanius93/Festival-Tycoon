@@ -15,8 +15,9 @@
 |---|---|
 | M0 – Grundgerüst & Deployment | ✅ fertig, gemergt, läuft auf GitHub Pages |
 | M1 – Wiese, Raster, Kamera, Wege | ✅ fertig, gemergt, läuft auf GitHub Pages |
-| M2 – Geländebereiche (Zäune & Durchgänge) | ✅ fertig (Pull Request; nach dem Merge auf GitHub Pages spielbar) |
-| M3 bis M10 | offen |
+| M2 – Geländebereiche (Zäune & Durchgänge) | ✅ fertig, gemergt, läuft auf GitHub Pages |
+| M3 – Objekte platzieren (Bau-Menü, Gebäude, Kasse) | ✅ fertig (Pull Request; nach dem Merge auf GitHub Pages spielbar) |
+| M4 bis M10 | offen |
 
 ## Vor jeder Aufgabe
 - **`GAME_DESIGN.md` lesen.** Sie ist die Gesamtvision des Spiels und die zentrale Quelle für alle Entscheidungen.
@@ -28,6 +29,7 @@
   2. Design-Dokument (`docs/superpowers/specs/`), vom Nutzer freigeben lassen
   3. `writing-plans` (Umsetzungsplan, vom Nutzer freigeben lassen)
   4. Umsetzung
+- **Umsetzung immer „selbst“ (Native):** Claude arbeitet alle Plan-Schritte in der Sitzung selbst ab (Skill `executing-plans`), am Ende prüft ein unabhängiger Helfer den ganzen Branch. Nicht jedes Mal neu fragen (vom Nutzer festgelegt).
 - Kein Spielcode, bevor Design und Plan freigegeben sind.
 
 ## Technik

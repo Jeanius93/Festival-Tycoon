@@ -6,11 +6,14 @@ import {
   EDGE_SCROLL_MARGIN,
   FIELD,
   TILE_SIZE,
+  START_CASH,
   ZOOM_LEVELS,
 } from '../config';
-import { TEXTURE_KEYS } from '../assets/placeholders';
-import { Grid, type Cell } from '../building/grid';
+import { TEXTURE_KEYS, buildingTextureKey } from '../assets/placeholders';
+import { Grid, type Building, type Cell } from '../building/grid';
+import { isDelivered } from '../building/placement';
 import { BuildTool } from '../building/buildTool';
+import { Cash } from '../economy/cash';
 import { fenceMask, pathMask } from '../building/autotile';
 import { computeZoom } from '../core/zoom';
 import type { UIScene } from './UIScene';
@@ -35,6 +38,20 @@ const MAP_HEIGHT = FIELD.height + 2 * BORDER_TILES;
 const WORLD_WIDTH = MAP_WIDTH * TILE_SIZE;
 const WORLD_HEIGHT = MAP_HEIGHT * TILE_SIZE;
 
+// Zeichenreihenfolge (von unten nach oben)
+const DEPTH = {
+  ground: 0,
+  paths: 1,
+  structures: 2,
+  buildings: 3,
+  warnings: 4,
+  grid: 5,
+  preview: 6,
+  ghost: 7,
+} as const;
+
+const PREVIEW_DELIVERY = PREVIEW_GID + 3;
+
 const NEIGHBOURS: ReadonlyArray<[number, number]> = [
   [0, 0],
   [0, -1],
@@ -52,6 +69,10 @@ export class WorldScene extends Phaser.Scene {
   private previewLayer!: Phaser.Tilemaps.TilemapLayer;
   private gridOverlay!: Phaser.GameObjects.TileSprite;
   private shownPreview: Cell[] = [];
+  private cash!: Cash;
+  private readonly buildingImages = new Map<number, Phaser.GameObjects.Image>();
+  private readonly warningIcons = new Map<number, Phaser.GameObjects.Image>();
+  private ghost!: Phaser.GameObjects.Image;
 
   private zoom = 1;
   private centerX = WORLD_WIDTH / 2;
@@ -67,7 +88,10 @@ export class WorldScene extends Phaser.Scene {
 
   create(): void {
     this.grid = new Grid(FIELD.width, FIELD.height);
-    this.tool = new BuildTool(this.grid);
+    this.cash = new Cash(START_CASH);
+    this.tool = new BuildTool(this.grid, this.cash);
+    this.buildingImages.clear();
+    this.warningIcons.clear();
     this.shownPreview = [];
     this.panButton = null;
     this.pointerInside = false;
@@ -75,9 +99,12 @@ export class WorldScene extends Phaser.Scene {
     this.createMap();
     this.setupCamera();
     this.setupInput();
-    this.scene.launch('UI', { tool: this.tool });
+    this.scene.launch('UI', { tool: this.tool, cash: this.cash });
 
-    const offGrid = this.grid.onChange((changed) => this.redrawCells(changed));
+    const offGrid = this.grid.onChange((changed) => {
+      this.redrawCells(changed);
+      this.syncBuildings();
+    });
     const offTool = this.tool.onChange(() => this.redrawPreview());
     this.scale.on(Phaser.Scale.Events.RESIZE, this.applyCamera, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -148,6 +175,9 @@ export class WorldScene extends Phaser.Scene {
     const paths = map.createBlankLayer('paths', pathSet);
     const structures = map.createBlankLayer('structures', [fenceSet, gateSet]);
     if (!ground || !paths || !structures) throw new Error('Kartenebenen konnten nicht erzeugt werden');
+    ground.setDepth(DEPTH.ground);
+    paths.setDepth(DEPTH.paths);
+    structures.setDepth(DEPTH.structures);
     ground.fill(GROUND_GID + 1, 0, 0, MAP_WIDTH, MAP_HEIGHT);
     ground.fill(GROUND_GID, BORDER_TILES, BORDER_TILES, FIELD.width, FIELD.height);
     this.pathLayer = paths;
@@ -161,12 +191,16 @@ export class WorldScene extends Phaser.Scene {
         FIELD.height * TILE_SIZE,
         TEXTURE_KEYS.gridCell,
       )
-      .setOrigin(0, 0);
+      .setOrigin(0, 0)
+      .setDepth(DEPTH.grid);
 
     const preview = map.createBlankLayer('preview', previewSet);
     if (!preview) throw new Error('Vorschau-Ebene konnte nicht erzeugt werden');
-    preview.setAlpha(0.6);
+    preview.setAlpha(0.6).setDepth(DEPTH.preview);
     this.previewLayer = preview;
+
+    this.ghost = this.add.image(0, 0, buildingTextureKey('toilet', 'N')).setOrigin(0, 0).setAlpha(0.6);
+    this.ghost.setDepth(DEPTH.ghost).setVisible(false);
   }
 
   private setupCamera(): void {
@@ -287,13 +321,64 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** Gleicht die Gebäude-Bilder mit dem Grundstück ab und zeigt Warnschilder bei fehlendem Lieferweg. */
+  private syncBuildings(): void {
+    const current = new Map(this.grid.buildings().map((b) => [b.id, b] as const));
+    for (const [id, image] of this.buildingImages) {
+      if (current.has(id)) continue;
+      image.destroy();
+      this.warningIcons.get(id)?.destroy();
+      this.buildingImages.delete(id);
+      this.warningIcons.delete(id);
+    }
+    for (const b of current.values()) {
+      if (!this.buildingImages.has(b.id)) this.createBuildingImage(b);
+      this.warningIcons.get(b.id)?.setVisible(!isDelivered(this.grid, b));
+    }
+  }
+
+  private createBuildingImage(b: Building): void {
+    const x = (b.x + BORDER_TILES) * TILE_SIZE;
+    const y = (b.y + BORDER_TILES) * TILE_SIZE;
+    const image = this.add.image(x, y, buildingTextureKey(b.type, b.facing)).setOrigin(0, 0).setDepth(DEPTH.buildings);
+    // Warnschild mittig auf der Rückseite, also dort, wo der Lieferweg fehlt
+    const w = b.width * TILE_SIZE;
+    const h = b.height * TILE_SIZE;
+    const [wx, wy] = { N: [w / 2, 0], S: [w / 2, h], E: [w, h / 2], W: [0, h / 2] }[b.facing];
+    const warning = this.add
+      .image(x + wx, y + wy, TEXTURE_KEYS.deliveryWarning)
+      .setOrigin(0.5, 0.5)
+      .setDepth(DEPTH.warnings);
+    this.buildingImages.set(b.id, image);
+    this.warningIcons.set(b.id, warning);
+  }
+
   private redrawPreview(): void {
     for (const { x, y } of this.shownPreview) this.previewLayer.removeTileAt(x + BORDER_TILES, y + BORDER_TILES);
+    this.ghost.setVisible(false);
     const preview = this.tool.preview;
-    this.shownPreview = preview ? [...preview.cells, ...preview.blocked] : [];
-    if (!preview) return;
-    const index = PREVIEW_GID + (preview.kind === 'build' ? 0 : 1);
-    for (const { x, y } of preview.cells) this.previewLayer.putTileAt(index, x + BORDER_TILES, y + BORDER_TILES);
-    for (const { x, y } of preview.blocked) this.previewLayer.putTileAt(PREVIEW_GID + 2, x + BORDER_TILES, y + BORDER_TILES);
+    if (!preview) {
+      this.shownPreview = [];
+      return;
+    }
+    const put = (cells: Cell[], index: number) => {
+      for (const { x, y } of cells) this.previewLayer.putTileAt(index, x + BORDER_TILES, y + BORDER_TILES);
+    };
+    if (preview.kind === 'building') {
+      this.shownPreview = [...preview.cells, ...preview.blocked, ...preview.back];
+      put(preview.cells, PREVIEW_GID);
+      put(preview.blocked, PREVIEW_GID + 2);
+      put(preview.back, PREVIEW_DELIVERY);
+      this.ghost
+        .setTexture(buildingTextureKey(preview.type, preview.facing))
+        .setPosition((preview.rect.x + BORDER_TILES) * TILE_SIZE, (preview.rect.y + BORDER_TILES) * TILE_SIZE)
+        .setVisible(true);
+      if (preview.verdict === 'ok') this.ghost.clearTint();
+      else this.ghost.setTint(COLORS.previewDemolish);
+      return;
+    }
+    this.shownPreview = [...preview.cells, ...preview.blocked];
+    put(preview.cells, PREVIEW_GID + (preview.kind === 'build' ? 0 : 1));
+    put(preview.blocked, PREVIEW_GID + 2);
   }
 }

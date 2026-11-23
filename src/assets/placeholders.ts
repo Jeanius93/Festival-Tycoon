@@ -2,6 +2,9 @@ import Phaser from 'phaser';
 import { COLORS, TILE_SIZE } from '../config';
 import { DIR } from '../building/autotile';
 import { fenceRects } from './fenceShape';
+import { buildingRects } from './buildingShape';
+import { BUILDING_TYPES, type BuildingType } from '../building/catalog';
+import type { Facing } from '../building/grid';
 
 export const TEXTURE_KEYS = {
   grass: 'grass',
@@ -9,17 +12,26 @@ export const TEXTURE_KEYS = {
   groundTiles: 'groundTiles',
   /** 16 Kacheln: Wegstück für jede Kombination verbundener Nachbarn (siehe DIR) */
   pathTiles: 'pathTiles',
-  /** 3 Kacheln: 0 = Bau-Vorschau, 1 = Abriss-Vorschau, 2 = nicht erlaubt */
+  /** 4 Kacheln: 0 = Bau-Vorschau, 1 = Abriss-Vorschau, 2 = nicht erlaubt, 3 = Lieferseite eines Gebäudes */
   previewTiles: 'previewTiles',
   /** 16 Kacheln: Zaunstück für jede Kombination verbundener Nachbarn (siehe DIR) */
   fenceTiles: 'fenceTiles',
   /** 4 Kacheln: 0 Schleuse waagrecht, 1 Schleuse senkrecht, 2 Tor waagrecht, 3 Tor senkrecht */
   gateTiles: 'gateTiles',
+  /** Warnschild „nicht beliefert“: weißer Lieferwagen auf Rot */
+  deliveryWarning: 'deliveryWarning',
   /** Eine Rasterzelle (Linie oben und links), wird gekachelt */
   gridCell: 'gridCell',
 } as const;
 
 const T = TILE_SIZE;
+
+const FACINGS: readonly Facing[] = ['N', 'E', 'S', 'W'];
+
+/** Name der Textur eines Gebäudes in einer Richtung (Rückseite zeigt nach `facing`). */
+export function buildingTextureKey(type: BuildingType, facing: Facing): string {
+  return `building-${type}-${facing}`;
+}
 
 /** Grashalme und Blümchen auf der Platzhalter-Kachel: [x, y, Farbe]. */
 const GRASS_DETAILS: ReadonlyArray<[number, number, number]> = [
@@ -148,6 +160,34 @@ function drawPreview(g: Phaser.GameObjects.Graphics, ox: number, color: number):
   g.strokeRect(ox + 0.5, 0.5, T - 1, T - 1);
 }
 
+/** Lieferseite in der Vorschau: blau schraffiertes Feld. */
+function drawDeliverySide(g: Phaser.GameObjects.Graphics, ox: number): void {
+  g.fillStyle(COLORS.previewDelivery);
+  g.fillRect(ox, 0, T, T);
+  g.fillStyle(0xffffff);
+  for (let d = -T; d < T; d += 4) {
+    for (let i = 0; i < T; i++) {
+      const x = d + i;
+      if (x >= 0 && x < T) g.fillRect(ox + x, i, 1, 1);
+    }
+  }
+}
+
+/** Warnschild „nicht beliefert“ (12 × 10): weißer Lieferwagen auf rotem Grund. */
+function drawDeliveryWarning(g: Phaser.GameObjects.Graphics): void {
+  g.fillStyle(COLORS.warningShade);
+  g.fillRect(0, 0, 12, 10);
+  g.fillStyle(COLORS.warning);
+  g.fillRect(0, 0, 11, 9);
+  g.fillStyle(0xffffff);
+  g.fillRect(1, 2, 6, 4); // Ladefläche
+  g.fillRect(7, 3, 3, 3); // Führerhaus
+  g.fillStyle(COLORS.warningShade);
+  g.fillRect(8, 4, 1, 1); // Fenster
+  g.fillRect(2, 6, 2, 2); // Räder
+  g.fillRect(7, 6, 2, 2);
+}
+
 /** Erzeugt eine Textur aus mehreren nebeneinanderliegenden Kacheln (Frames 0, 1, 2 …). */
 function makeStrip(
   scene: Phaser.Scene,
@@ -168,7 +208,11 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   makeStrip(scene, TEXTURE_KEYS.grass, 1, (g, ox) => drawGrass(g, ox));
   makeStrip(scene, TEXTURE_KEYS.groundTiles, 2, (g, ox, i) => (i === 0 ? drawGrass(g, ox) : drawBorder(g, ox)));
   makeStrip(scene, TEXTURE_KEYS.pathTiles, 16, (g, ox, mask) => drawPath(g, ox, mask));
-  makeStrip(scene, TEXTURE_KEYS.previewTiles, 3, (g, ox, i) => {
+  makeStrip(scene, TEXTURE_KEYS.previewTiles, 4, (g, ox, i) => {
+    if (i === 3) {
+      drawDeliverySide(g, ox);
+      return;
+    }
     drawPreview(g, ox, i === 0 ? COLORS.previewBuild : COLORS.previewDemolish);
     if (i === 2) {
       // „Nicht erlaubt“: rotes Feld mit weißem Kreuz
@@ -181,6 +225,24 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   });
   makeStrip(scene, TEXTURE_KEYS.fenceTiles, 16, (g, ox, mask) => drawFence(g, ox, mask));
   makeStrip(scene, TEXTURE_KEYS.gateTiles, 4, (g, ox, i) => drawGate(g, ox, i >= 2, i % 2 === 1));
+
+  for (const type of BUILDING_TYPES) {
+    for (const facing of FACINGS) {
+      const { width, height, rects } = buildingRects(type, facing);
+      const g = scene.make.graphics({ x: 0, y: 0 }, false);
+      for (const [x, y, w, h, color] of rects) {
+        g.fillStyle(color);
+        g.fillRect(x, y, w, h);
+      }
+      g.generateTexture(buildingTextureKey(type, facing), width, height);
+      g.destroy();
+    }
+  }
+
+  const warning = scene.make.graphics({ x: 0, y: 0 }, false);
+  drawDeliveryWarning(warning);
+  warning.generateTexture(TEXTURE_KEYS.deliveryWarning, 12, 10);
+  warning.destroy();
 
   const grid = scene.make.graphics({ x: 0, y: 0 }, false);
   grid.fillStyle(COLORS.grid, 0.22);

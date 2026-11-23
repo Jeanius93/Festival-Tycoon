@@ -24,6 +24,9 @@ export const EDGE_SCROLL_MARGIN = 16;
 /** Breite des Gebüsch-Randes rund um das Grundstück (in Feldern). */
 export const BORDER_TILES = 3;
 
+/** Geld in der Kasse zu Spielbeginn (in Euro). */
+export const START_CASH = 10000;
+
 export const GAME_TITLE = 'Festival Tycoon';
 
 /** Warme, gemütliche Grundfarben (Platzhalter bis zu den echten Grafiken). */
@@ -47,8 +50,12 @@ export const COLORS = {
   gateBarrierWhite: 0xfff8e1,
   previewBuild: 0xfff3c4,
   previewDemolish: 0xe53935,
+  previewDelivery: 0x29b6f6,
+  warning: 0xe53935,
+  warningShade: 0x7f1d1d,
   uiPanel: 0x3e2723,
   uiButton: 0x6d4c41,
   uiButtonActive: 0xef8f00,
+  uiButtonOpen: 0x8d6e63,
   uiText: 0xfff8e1,
 } as const;

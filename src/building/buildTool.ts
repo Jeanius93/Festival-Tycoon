@@ -1,34 +1,51 @@
-import type { Cell, Grid } from './grid';
+import type { Cash } from '../economy/cash';
+import { CATALOG, type BuildingType } from './catalog';
+import type { Building, Cell, Facing, Grid } from './grid';
 import { lCells } from './lineTool';
+import { backCells, footprint, placementVerdict, rectCells, rotateFacing, type PlacementVerdict, type Rect } from './placement';
 import { changeFor, verdict, type BuildKind } from './rules';
 
-/** Werkzeuge: nur schauen, Weg, Zaun, Besucher-Schleuse, Personal-Tor, abreißen. */
-export type ToolMode = 'view' | 'path' | 'fence' | 'visitorGate' | 'staffGate' | 'demolish';
+/** Werkzeuge: nur schauen, Weg, Zaun, Besucher-Schleuse, Personal-Tor, Gebäude, abreißen. */
+export type ToolMode = 'view' | 'path' | 'fence' | 'visitorGate' | 'staffGate' | 'building' | 'demolish';
 
 /**
- * Was die Vorschau gerade zeigen soll. Bei 'build' stehen in `cells` die Felder,
- * die gebaut werden oder schon fertig sind (hell), in `blocked` die nicht erlaubten (rot).
- * Bei 'demolish' stehen alle Felder in `cells`, `blocked` ist leer.
+ * Was die Vorschau gerade zeigen soll.
+ * - 'build': `cells` werden gebaut oder sind schon fertig (hell), `blocked` sind nicht erlaubt (rot).
+ * - 'demolish': alle betroffenen Felder in `cells` (auch die ganzen Grundflächen berührter Gebäude).
+ * - 'building': Grundfläche des Gebäudes unter der Maus; erlaubt → `cells`, sonst `blocked`.
+ *   `back` sind die Felder hinter der Rückseite (Lieferseite). Nur Felder auf dem Grundstück.
  */
-export interface Preview {
-  cells: Cell[];
-  blocked: Cell[];
-  kind: 'build' | 'demolish';
-}
+export type Preview =
+  | { kind: 'build' | 'demolish'; cells: Cell[]; blocked: Cell[] }
+  | {
+      kind: 'building';
+      type: BuildingType;
+      facing: Facing;
+      rect: Rect;
+      cells: Cell[];
+      blocked: Cell[];
+      back: Cell[];
+      verdict: PlacementVerdict;
+    };
 
 /**
  * Das Bau-Werkzeug ohne Grafik: merkt sich Modus, Ziehen und Vorschau
- * und wendet das Ergebnis beim Loslassen auf das Grundstück an.
+ * und wendet das Ergebnis beim Loslassen auf das Grundstück und die Kasse an.
  */
 export class BuildTool {
   private currentMode: ToolMode = 'view';
   private modeBeforeDemolish: ToolMode = 'view';
   private horizontalFirst = true;
+  private selectedBuilding: BuildingType | null = null;
+  private currentFacing: Facing = 'N';
   private dragStart: Cell | null = null;
   private hover: Cell | null = null;
   private readonly listeners = new Set<() => void>();
 
-  constructor(private readonly grid: Grid) {}
+  constructor(
+    private readonly grid: Grid,
+    private readonly cash: Cash,
+  ) {}
 
   get mode(): ToolMode {
     return this.currentMode;
@@ -38,7 +55,18 @@ export class BuildTool {
     return this.dragStart !== null;
   }
 
+  /** Die zuletzt gewählte Gebäudeart (bleibt auch in anderen Modi gemerkt). */
+  get buildingType(): BuildingType | null {
+    return this.selectedBuilding;
+  }
+
+  /** Richtung der Rückseite für das nächste Gebäude. */
+  get facing(): Facing {
+    return this.currentFacing;
+  }
+
   setMode(mode: ToolMode): void {
+    if (mode === 'building' && !this.selectedBuilding) return;
     const wasDragging = this.isDragging;
     this.dragStart = null;
     if (mode === this.currentMode) {
@@ -50,13 +78,33 @@ export class BuildTool {
     this.notify();
   }
 
+  /** Wählt ein Gebäude zum Bauen; die Richtung bleibt erhalten. */
+  selectBuilding(type: BuildingType): void {
+    if (this.selectedBuilding === type) {
+      this.setMode('building');
+      return;
+    }
+    this.selectedBuilding = type;
+    if (this.currentMode === 'building') {
+      this.dragStart = null;
+      this.notify();
+    } else {
+      this.setMode('building');
+    }
+  }
+
   /** Entf: Abreißen ein bzw. zurück zum Werkzeug davor. */
   toggleDemolish(): void {
     this.setMode(this.currentMode === 'demolish' ? this.modeBeforeDemolish : 'demolish');
   }
 
-  /** R: Ecke der L-Form drehen. */
+  /** R: Gebäude drehen bzw. Ecke der L-Form drehen. */
   rotate(): void {
+    if (this.currentMode === 'building') {
+      this.currentFacing = rotateFacing(this.currentFacing);
+      this.notify();
+      return;
+    }
     this.horizontalFirst = !this.horizontalFirst;
     if (this.isDragging) this.notify();
   }
@@ -77,14 +125,25 @@ export class BuildTool {
   /** Loslassen: baut bzw. reißt ab und liefert die geänderten Felder. */
   pointerUp(): Cell[] {
     if (!this.isDragging) return [];
-    const cells = this.previewCells();
-    this.dragStart = null;
-    const kind = this.buildKind();
-    const changed = kind
-      ? this.grid.apply(
-          cells.filter((c) => verdict(this.grid, kind, c.x, c.y) === 'build').map((c) => changeFor(this.grid, kind, c.x, c.y)),
-        )
-      : this.grid.clear(cells);
+    let changed: Cell[];
+    if (this.currentMode === 'building') {
+      changed = this.placeBuilding();
+      this.dragStart = null;
+    } else if (this.currentMode === 'demolish') {
+      changed = this.demolish(this.previewCells());
+      this.dragStart = null;
+    } else {
+      const cells = this.previewCells();
+      this.dragStart = null;
+      const kind = this.buildKind();
+      changed = kind
+        ? this.grid.apply(
+            cells
+              .filter((c) => verdict(this.grid, kind, c.x, c.y) === 'build')
+              .map((c) => changeFor(this.grid, kind, c.x, c.y)),
+          )
+        : [];
+    }
     this.notify();
     return changed;
   }
@@ -99,10 +158,14 @@ export class BuildTool {
 
   get preview(): Preview | null {
     if (this.currentMode === 'view') return null;
+    if (this.currentMode === 'building') return this.buildingPreview();
     const cells = this.previewCells();
     if (cells.length === 0) return null;
+    if (this.currentMode === 'demolish') {
+      return { cells: [...cells, ...this.extraFootprintCells(cells)], blocked: [], kind: 'demolish' };
+    }
     const kind = this.buildKind();
-    if (!kind) return { cells, blocked: [], kind: 'demolish' };
+    if (!kind) return null;
     const allowed: Cell[] = [];
     const blocked: Cell[] = [];
     for (const c of cells) (verdict(this.grid, kind, c.x, c.y) === 'blocked' ? blocked : allowed).push(c);
@@ -114,6 +177,79 @@ export class BuildTool {
     return () => this.listeners.delete(listener);
   }
 
+  /** Grundfläche und Urteil für das gewählte Gebäude an der Mausposition. */
+  private placement(): { type: BuildingType; rect: Rect; verdict: PlacementVerdict } | null {
+    const type = this.selectedBuilding;
+    if (!type || !this.hover || !this.grid.inBounds(this.hover.x, this.hover.y)) return null;
+    const rect = footprint(type, this.currentFacing, this.hover);
+    return { type, rect, verdict: placementVerdict(this.grid, rect, CATALOG[type].price, this.cash.balance) };
+  }
+
+  private buildingPreview(): Preview | null {
+    const p = this.placement();
+    if (!p) return null;
+    const inside = (c: Cell) => this.grid.inBounds(c.x, c.y);
+    const area = rectCells(p.rect).filter(inside);
+    const ok = p.verdict === 'ok';
+    return {
+      kind: 'building',
+      type: p.type,
+      facing: this.currentFacing,
+      rect: p.rect,
+      cells: ok ? area : [],
+      blocked: ok ? [] : area,
+      back: backCells(p.rect, this.currentFacing).filter(inside),
+      verdict: p.verdict,
+    };
+  }
+
+  /** Stellt das gewählte Gebäude an der Mausposition hin, wenn die Bauregel es erlaubt. */
+  private placeBuilding(): Cell[] {
+    const p = this.placement();
+    if (!p || p.verdict !== 'ok') return [];
+    const price = CATALOG[p.type].price;
+    if (!this.cash.spend(price)) return [];
+    this.grid.addBuilding({ type: p.type, ...p.rect, facing: this.currentFacing, paidPrice: price });
+    return rectCells(p.rect);
+  }
+
+  /** Reißt alles auf den Feldern ab; berührte Gebäude ganz, mit Erstattung des bezahlten Preises. */
+  private demolish(cells: Cell[]): Cell[] {
+    const changed: Cell[] = [];
+    for (const b of this.touchedBuildings(cells)) {
+      this.grid.removeBuilding(b.id);
+      this.cash.refund(b.paidPrice);
+      changed.push(...rectCells(b));
+    }
+    changed.push(...this.grid.clear(cells));
+    return changed;
+  }
+
+  /** Gebäude, die mindestens eines der Felder belegen (jedes nur einmal). */
+  private touchedBuildings(cells: Cell[]): Building[] {
+    const found = new Map<number, Building>();
+    for (const { x, y } of cells) {
+      const b = this.grid.buildingAt(x, y);
+      if (b) found.set(b.id, b);
+    }
+    return [...found.values()];
+  }
+
+  /** Felder berührter Gebäude, die nicht schon in `cells` liegen. */
+  private extraFootprintCells(cells: Cell[]): Cell[] {
+    const seen = new Set(cells.map(({ x, y }) => `${x},${y}`));
+    const extra: Cell[] = [];
+    for (const b of this.touchedBuildings(cells)) {
+      for (const c of rectCells(b)) {
+        const key = `${c.x},${c.y}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        extra.push(c);
+      }
+    }
+    return extra;
+  }
+
   private previewCells(): Cell[] {
     if (!this.hover) return [];
     // Durchgänge betreffen immer nur das Feld unter der Maus, auch während gedrückter Taste.
@@ -123,9 +259,10 @@ export class BuildTool {
     return cells.filter((c) => this.grid.inBounds(c.x, c.y));
   }
 
-  /** Bauart des aktiven Werkzeugs; null beim Abreißen (und bei „Ansehen“). */
+  /** Bauart der Feld-Werkzeuge (Weg, Zaun, Durchgänge); sonst null. */
   private buildKind(): BuildKind | null {
-    return this.currentMode === 'view' || this.currentMode === 'demolish' ? null : this.currentMode;
+    const m = this.currentMode;
+    return m === 'path' || m === 'fence' || m === 'visitorGate' || m === 'staffGate' ? m : null;
   }
 
   private notify(): void {

@@ -121,3 +121,12 @@ describe('Umwandeln vorhandener Durchgänge', () => {
     expect(verdict(g, 'visitorGate', 2, 2)).toBe('blocked');
   });
 });
+
+describe('Regeln – Gebäude', () => {
+  it('Weg, Zaun, Schleuse und Tor sind auf Gebäudefeldern nicht erlaubt', () => {
+    const g = new Grid(10, 10);
+    g.apply([{ x: 2, y: 5, structure: 'fence' }, { x: 4, y: 5, structure: 'fence' }]);
+    g.addBuilding({ type: 'toilet', x: 3, y: 5, width: 1, height: 1, facing: 'N', paidPrice: 150 });
+    for (const kind of ['path', 'fence', 'visitorGate', 'staffGate'] as const) expect(verdict(g, kind, 3, 5)).toBe('blocked');
+  });
+});

@@ -1,4 +1,7 @@
 import type { ToolMode } from '../building/buildTool';
+import { CATALOG, type BuildingType } from '../building/catalog';
+import type { PlacementVerdict } from '../building/placement';
+import { formatMoney } from './format';
 
 /** Beschriftung der Schaltflächen in der Werkzeugleiste. */
 export const TOOL_LABELS: Record<ToolMode, string> = {
@@ -7,6 +10,7 @@ export const TOOL_LABELS: Record<ToolMode, string> = {
   fence: 'Zaun',
   visitorGate: 'Schleuse',
   staffGate: 'Tor',
+  building: 'Gebäude',
   demolish: 'Abreißen',
 };
 
@@ -17,5 +21,16 @@ export const TOOL_HINTS: Record<ToolMode, string> = {
   fence: 'Ziehen: Zaun bauen · R: Ecke drehen · Rechtsklick: Abbrechen',
   visitorGate: 'Klick in geraden Zaun: Schleuse für Gäste · Rechtsklick: Ansehen',
   staffGate: 'Klick in geraden Zaun: Tor für Personal und Lieferwagen (Weg darf durch) · Rechtsklick: Ansehen',
+  building: 'Gebäude wählen',
   demolish: 'Ziehen: alles abreißen · Entf: Abreißen aus · Rechtsklick: Abbrechen',
 };
+
+/** Hinweis im Gebäude-Modus, abhängig vom Urteil der Bauregel unter der Maus. */
+export function buildingHint(type: BuildingType, verdict: PlacementVerdict | null, balance: number): string {
+  const { name, price } = CATALOG[type];
+  const keys = 'R: drehen · Rechtsklick: Ansehen';
+  if (verdict === 'blocked') return `Kein Platz für ${name} · ${keys}`;
+  if (verdict === 'tooExpensive') return `Zu teuer: ${name} kostet ${formatMoney(price)}, Kasse: ${formatMoney(balance)}`;
+  if (verdict === null) return `${name} (${formatMoney(price)}) auf die Wiese stellen · ${keys}`;
+  return `Klick: ${name} bauen (${formatMoney(price)}) · ${keys}`;
+}
