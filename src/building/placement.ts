@@ -1,5 +1,6 @@
 import { CATALOG, type BuildingType } from './catalog';
 import type { Building, Cell, Facing, Grid } from './grid';
+import type { RoadNetwork } from './roadNetwork';
 
 /** Rechteck aus Feldern: linke obere Ecke plus Ausdehnung. */
 export interface Rect {
@@ -57,9 +58,9 @@ export function backCells(r: Rect, facing: Facing): Cell[] {
   }
 }
 
-/** Beliefert, wenn mindestens ein Feld direkt hinter der Rückseite ein Weg ist. */
-export function isDelivered(grid: Grid, b: Building): boolean {
-  return backCells(b, b.facing).some(({ x, y }) => grid.isPath(x, y));
+/** Beliefert, wenn direkt hinter der Rückseite ein Weg liegt, der bis zur Straße führt. */
+export function isDelivered(grid: Grid, b: Building, roads: RoadNetwork): boolean {
+  return backCells(b, b.facing).some(({ x, y }) => grid.isPath(x, y) && roads.isConnected(x, y));
 }
 
 /** Die eine Bauregel für Gebäude, die Vorschau und Bauen gemeinsam nutzen. */

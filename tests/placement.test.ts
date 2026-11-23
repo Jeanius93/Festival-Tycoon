@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Grid, type Facing } from '../src/building/grid';
+import { RoadNetwork } from '../src/building/roadNetwork';
 import { backCells, footprint, isDelivered, placementVerdict, rectCells, rotateFacing } from '../src/building/placement';
 
 describe('Platzierung', () => {
@@ -30,20 +31,31 @@ describe('Platzierung', () => {
   it('isDelivered folgt dem Weg (Weg unter Personal-Tor zählt, Tor ohne Weg nicht)', () => {
     const g = new Grid(10, 10);
     const b = g.addBuilding({ type: 'beer', x: 4, y: 5, width: 3, height: 2, facing: 'N', paidPrice: 600 });
-    expect(isDelivered(g, b)).toBe(false);
+    // Wegspalte x = 7 von der Straße (unterste Reihe) bis neben die Rückseite
+    g.applyPath([4, 5, 6, 7, 8, 9].map((y) => ({ x: 7, y })), true);
+    const roads = () => new RoadNetwork(g);
+    expect(isDelivered(g, b, roads())).toBe(false);
     g.apply([{ x: 6, y: 4, structure: 'staffGate', orientation: 'horizontal' }]);
-    expect(isDelivered(g, b)).toBe(false);
+    expect(isDelivered(g, b, roads())).toBe(false);
     g.apply([{ x: 6, y: 4, path: true }]);
-    expect(isDelivered(g, b)).toBe(true);
+    expect(isDelivered(g, b, roads())).toBe(true);
     g.clear([{ x: 6, y: 4 }]);
-    expect(isDelivered(g, b)).toBe(false);
-    g.applyPath([{ x: 5, y: 7 }], true); // Weg vorne zählt nicht
-    expect(isDelivered(g, b)).toBe(false);
+    expect(isDelivered(g, b, roads())).toBe(false);
+    g.applyPath([{ x: 5, y: 7 }, { x: 5, y: 8 }, { x: 5, y: 9 }], true); // Weg vorne zählt nicht
+    expect(isDelivered(g, b, roads())).toBe(false);
+  });
+  it('isDelivered: Wegstück ohne Straßenverbindung reicht nicht', () => {
+    const g = new Grid(10, 10);
+    const b = g.addBuilding({ type: 'beer', x: 4, y: 5, width: 3, height: 2, facing: 'N', paidPrice: 600 });
+    g.applyPath([{ x: 6, y: 4 }], true);
+    expect(isDelivered(g, b, new RoadNetwork(g))).toBe(false);
+    g.applyPath([4, 5, 6, 7, 8, 9].map((y) => ({ x: 7, y })), true);
+    expect(isDelivered(g, b, new RoadNetwork(g))).toBe(true);
   });
   it('Gebäude mit Rückseite am Grundstücksrand ist nie beliefert, ohne Fehler', () => {
     const g = new Grid(10, 10);
     const b = g.addBuilding({ type: 'beer', x: 0, y: 0, width: 3, height: 2, facing: 'N', paidPrice: 600 });
-    expect(isDelivered(g, b)).toBe(false);
+    expect(isDelivered(g, b, new RoadNetwork(g))).toBe(false);
   });
 });
 

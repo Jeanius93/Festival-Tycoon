@@ -12,6 +12,7 @@ import {
 import { TEXTURE_KEYS, buildingTextureKey } from '../assets/placeholders';
 import { Grid, type Building, type Cell } from '../building/grid';
 import { isDelivered } from '../building/placement';
+import { RoadNetwork } from '../building/roadNetwork';
 import { BuildTool } from '../building/buildTool';
 import { Cash } from '../economy/cash';
 import { fenceMask, pathMask } from '../building/autotile';
@@ -324,6 +325,7 @@ export class WorldScene extends Phaser.Scene {
   /** Gleicht die Gebäude-Bilder mit dem Grundstück ab und zeigt Warnschilder bei fehlendem Lieferweg. */
   private syncBuildings(): void {
     const current = new Map(this.grid.buildings().map((b) => [b.id, b] as const));
+    const roads = new RoadNetwork(this.grid);
     for (const [id, image] of this.buildingImages) {
       if (current.has(id)) continue;
       image.destroy();
@@ -333,7 +335,7 @@ export class WorldScene extends Phaser.Scene {
     }
     for (const b of current.values()) {
       if (!this.buildingImages.has(b.id)) this.createBuildingImage(b);
-      this.warningIcons.get(b.id)?.setVisible(!isDelivered(this.grid, b));
+      this.warningIcons.get(b.id)?.setVisible(!isDelivered(this.grid, b, roads));
     }
   }
 
