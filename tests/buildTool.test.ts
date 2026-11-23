@@ -345,3 +345,46 @@ describe('BuildTool – Gebäude', () => {
     expect(grid.isPath(5, 0)).toBe(true);
   });
 });
+
+describe('BuildTool – Zeltfläche', () => {
+  it('Zeltfläche als Rechteck aufziehen, Zaunfelder rot und übersprungen', () => {
+    const { grid, tool } = setup();
+    grid.apply([{ x: 2, y: 2, structure: 'fence' }]);
+    tool.setMode('camp');
+    tool.pointerDown({ x: 1, y: 1 });
+    tool.pointerMove({ x: 3, y: 3 });
+    const p = tool.preview!;
+    expect(p.kind).toBe('build');
+    if (p.kind === 'build') {
+      expect(p.cells).toHaveLength(8);
+      expect(p.blocked).toEqual([{ x: 2, y: 2 }]);
+    }
+    tool.pointerUp();
+    expect(grid.isCamp(1, 1)).toBe(true);
+    expect(grid.isCamp(3, 3)).toBe(true);
+    expect(grid.isCamp(2, 2)).toBe(false);
+  });
+  it('ohne Ziehen nur das Feld unter der Maus', () => {
+    const { tool } = setup();
+    tool.setMode('camp');
+    tool.pointerMove({ x: 4, y: 4 });
+    expect(tool.preview).toEqual({ kind: 'build', cells: [{ x: 4, y: 4 }], blocked: [] });
+  });
+  it('Abreißen entfernt Markierung, belegte Felder bleiben unberührt', () => {
+    const { grid, tool } = setup();
+    grid.apply([{ x: 1, y: 1, camp: true }, { x: 2, y: 1, camp: true }]);
+    grid.setOccupied([{ x: 2, y: 1 }], true);
+    tool.setMode('demolish');
+    tool.pointerDown({ x: 1, y: 1 });
+    tool.pointerMove({ x: 2, y: 1 });
+    const p = tool.preview!;
+    expect(p.kind).toBe('demolish');
+    if (p.kind === 'demolish') {
+      expect(p.cells).toEqual([{ x: 1, y: 1 }]);
+      expect(p.blocked).toEqual([{ x: 2, y: 1 }]);
+    }
+    tool.pointerUp();
+    expect(grid.isCamp(1, 1)).toBe(false);
+    expect(grid.isCamp(2, 1)).toBe(true);
+  });
+});

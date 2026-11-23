@@ -14,6 +14,7 @@ describe('Bau-Menü', () => {
       ['Zaun', null],
       ['Schleuse', null],
       ['Tor', null],
+      ['Zeltfläche', null],
     ]);
     expect(subMenu('paths')[2].action).toEqual({ kind: 'mode', mode: 'visitorGate' });
     expect(subMenu('stages').map((e) => [e.label, e.price])).toEqual([['Bühne', 4000]]);
@@ -25,6 +26,7 @@ describe('Bau-Menü', () => {
     expect(categoryOf('path', null)).toBe('paths');
     expect(categoryOf('fence', null)).toBe('paths');
     expect(categoryOf('staffGate', 'beer')).toBe('paths');
+    expect(categoryOf('camp', null)).toBe('paths');
     expect(categoryOf('building', 'beer')).toBe('stalls');
     expect(categoryOf('building', 'stage')).toBe('stages');
     expect(categoryOf('building', 'toilet')).toBe('sanitary');

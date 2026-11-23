@@ -25,7 +25,7 @@ export interface MenuEntry {
   action: MenuAction;
 }
 
-const PATH_TOOLS = ['path', 'fence', 'visitorGate', 'staffGate'] as const;
+const PATH_TOOLS = ['path', 'fence', 'visitorGate', 'staffGate', 'camp'] as const;
 
 /** Einträge der Unterleiste einer Kategorie (Ansehen und Abreißen haben keine). */
 export function subMenu(category: MenuCategory): MenuEntry[] {

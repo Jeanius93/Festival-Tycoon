@@ -1,17 +1,18 @@
 import type { Cash } from '../economy/cash';
 import { CATALOG, type BuildingType } from './catalog';
 import type { Building, Cell, Facing, Grid } from './grid';
-import { lCells } from './lineTool';
+import { lCells, rectBetween } from './lineTool';
 import { backCells, footprint, placementVerdict, rectCells, rotateFacing, type PlacementVerdict, type Rect } from './placement';
 import { changeFor, verdict, type BuildKind } from './rules';
 
-/** Werkzeuge: nur schauen, Weg, Zaun, Besucher-Schleuse, Personal-Tor, Gebäude, abreißen. */
-export type ToolMode = 'view' | 'path' | 'fence' | 'visitorGate' | 'staffGate' | 'building' | 'demolish';
+/** Werkzeuge: nur schauen, Weg, Zaun, Besucher-Schleuse, Personal-Tor, Zeltfläche, Gebäude, abreißen. */
+export type ToolMode = 'view' | 'path' | 'fence' | 'visitorGate' | 'staffGate' | 'camp' | 'building' | 'demolish';
 
 /**
  * Was die Vorschau gerade zeigen soll.
  * - 'build': `cells` werden gebaut oder sind schon fertig (hell), `blocked` sind nicht erlaubt (rot).
- * - 'demolish': alle betroffenen Felder in `cells` (auch die ganzen Grundflächen berührter Gebäude).
+ * - 'demolish': alle betroffenen Felder in `cells` (auch die ganzen Grundflächen berührter Gebäude);
+ *   `blocked` sind Stellplätze mit Zelt oder Auto, die stehen bleiben.
  * - 'building': Grundfläche des Gebäudes unter der Maus; erlaubt → `cells`, sonst `blocked`.
  *   `back` sind die Felder hinter der Rückseite (Lieferseite). Nur Felder auf dem Grundstück.
  */
@@ -130,7 +131,7 @@ export class BuildTool {
       changed = this.placeBuilding();
       this.dragStart = null;
     } else if (this.currentMode === 'demolish') {
-      changed = this.demolish(this.previewCells());
+      changed = this.demolish(this.previewCells().filter((c) => !this.grid.isOccupied(c.x, c.y)));
       this.dragStart = null;
     } else {
       const cells = this.previewCells();
@@ -162,7 +163,9 @@ export class BuildTool {
     const cells = this.previewCells();
     if (cells.length === 0) return null;
     if (this.currentMode === 'demolish') {
-      return { cells: [...cells, ...this.extraFootprintCells(cells)], blocked: [], kind: 'demolish' };
+      const free = cells.filter((c) => !this.grid.isOccupied(c.x, c.y));
+      const kept = cells.filter((c) => this.grid.isOccupied(c.x, c.y));
+      return { cells: [...free, ...this.extraFootprintCells(free)], blocked: kept, kind: 'demolish' };
     }
     const kind = this.buildKind();
     if (!kind) return null;
@@ -254,15 +257,17 @@ export class BuildTool {
     if (!this.hover) return [];
     // Durchgänge betreffen immer nur das Feld unter der Maus, auch während gedrückter Taste.
     const isGate = this.currentMode === 'visitorGate' || this.currentMode === 'staffGate';
-    const cells =
-      this.dragStart && !isGate ? lCells(this.dragStart, this.hover, this.horizontalFirst) : [this.hover];
+    let cells: Cell[];
+    if (!this.dragStart || isGate) cells = [this.hover];
+    else if (this.currentMode === 'camp') cells = rectBetween(this.dragStart, this.hover);
+    else cells = lCells(this.dragStart, this.hover, this.horizontalFirst);
     return cells.filter((c) => this.grid.inBounds(c.x, c.y));
   }
 
-  /** Bauart der Feld-Werkzeuge (Weg, Zaun, Durchgänge); sonst null. */
+  /** Bauart der Feld-Werkzeuge (Weg, Zaun, Durchgänge, Zeltfläche); sonst null. */
   private buildKind(): BuildKind | null {
     const m = this.currentMode;
-    return m === 'path' || m === 'fence' || m === 'visitorGate' || m === 'staffGate' ? m : null;
+    return m === 'path' || m === 'fence' || m === 'visitorGate' || m === 'staffGate' || m === 'camp' ? m : null;
   }
 
   private notify(): void {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lCells } from '../src/building/lineTool';
+import { lCells, rectBetween } from '../src/building/lineTool';
 
 describe('lCells', () => {
   it('Start = Ende → ein Feld', () => expect(lCells({ x: 2, y: 3 }, { x: 2, y: 3 }, true)).toEqual([{ x: 2, y: 3 }]));
@@ -25,5 +25,12 @@ describe('lCells', () => {
     for (let i = 1; i < cells.length; i++) {
       expect(Math.abs(cells[i].x - cells[i - 1].x) + Math.abs(cells[i].y - cells[i - 1].y)).toBe(1);
     }
+  });
+});
+
+describe('rectBetween', () => {
+  it('Rechteck in beliebiger Zugrichtung', () => {
+    expect(rectBetween({ x: 2, y: 1 }, { x: 1, y: 2 })).toEqual([{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 2 }]);
+    expect(rectBetween({ x: 3, y: 3 }, { x: 3, y: 3 })).toEqual([{ x: 3, y: 3 }]);
   });
 });

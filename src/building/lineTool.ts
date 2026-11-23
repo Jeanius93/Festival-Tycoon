@@ -8,6 +8,15 @@ function span(from: number, to: number): number[] {
   return out;
 }
 
+/** Alle Felder des Rechtecks mit den Ecken `a` und `b`, zeilenweise von oben links. */
+export function rectBetween(a: Cell, b: Cell): Cell[] {
+  const cells: Cell[] = [];
+  for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y++) {
+    for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) cells.push({ x, y });
+  }
+  return cells;
+}
+
 /**
  * Felder eines L-förmigen Weges vom Start- zum Endfeld, in Reihenfolge.
  * Ecke bei (end.x, start.y), wenn horizontalFirst, sonst bei (start.x, end.y).
