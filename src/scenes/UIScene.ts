@@ -6,6 +6,8 @@ import type { Cash } from '../economy/cash';
 import { buildingHint, TOOL_HINTS } from '../ui/hints';
 import { formatMoney } from '../ui/format';
 import { MAIN_MENU, MenuState, categoryOf, subMenu, type MenuCategory, type MenuEntry } from '../ui/menu';
+import { START_LABEL, START_MISSING, clockLabel, statsLabel, summaryLines } from '../ui/festivalText';
+import type { Festival } from '../visitors/festival';
 
 const toCss = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
 
@@ -19,11 +21,22 @@ interface Button {
 
 /**
  * Bedienoberfläche über der Spielwelt (zoomt nicht mit): Bau-Menü mit Hauptleiste
- * und Unterleiste, Hinweistext und Kassen-Anzeige.
+ * und Unterleiste, Hinweistext, Kassen-Anzeige, Spieluhr, Start-Knopf, Gesamtanzeige
+ * und die Zusammenfassung am Ende des Festivals.
  */
 export class UIScene extends Phaser.Scene {
   private tool!: BuildTool;
   private cash!: Cash;
+  private festival!: Festival;
+  private clockText!: Phaser.GameObjects.Text;
+  private statsText!: Phaser.GameObjects.Text;
+  private startButton!: Button;
+  private startHint!: Phaser.GameObjects.Text;
+  private summaryPanel!: Phaser.GameObjects.Rectangle;
+  private summaryText!: Phaser.GameObjects.Text;
+  private okButton!: Button;
+  /** Zuletzt gezeigter Zustand der Festival-Anzeigen; nur bei Änderung wird neu gesetzt. */
+  private festivalKey = '';
   private mainPanel!: Phaser.GameObjects.Rectangle;
   private subPanel!: Phaser.GameObjects.Rectangle;
   private mainButtons: Array<Button & { category: MenuCategory }> = [];
@@ -39,9 +52,11 @@ export class UIScene extends Phaser.Scene {
     super('UI');
   }
 
-  init(data: { tool: BuildTool; cash: Cash }): void {
+  init(data: { tool: BuildTool; cash: Cash; festival: Festival }): void {
     this.tool = data.tool;
     this.cash = data.cash;
+    this.festival = data.festival;
+    this.festivalKey = '';
     this.menu = new MenuState();
     this.layoutKey = '';
   }
@@ -79,6 +94,29 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setInteractive();
 
+    const label = (bold: boolean) =>
+      this.add.text(0, 0, '', {
+        fontFamily: 'monospace',
+        fontStyle: bold ? 'bold' : '',
+        color: toCss(COLORS.uiText),
+        backgroundColor: toCss(COLORS.uiPanel),
+      });
+    this.clockText = label(true).setOrigin(0, 0).setInteractive();
+    this.statsText = label(true).setOrigin(0.5, 0).setInteractive();
+    this.startHint = label(false).setOrigin(0.5, 0).setText(START_MISSING).setInteractive();
+    this.startButton = this.makeButton(START_LABEL);
+    this.startButton.box.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button === 0) this.festival.start();
+    });
+    this.summaryPanel = this.add.rectangle(0, 0, 1, 1, COLORS.uiPanel, 0.96).setOrigin(0.5, 0.5).setInteractive();
+    this.summaryText = this.add
+      .text(0, 0, '', { fontFamily: 'monospace', color: toCss(COLORS.uiText), align: 'center' })
+      .setOrigin(0.5, 0);
+    this.okButton = this.makeButton('OK');
+    this.okButton.box.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button === 0) this.festival.closeSummary();
+    });
+
     this.menu.syncTool(this.tool.mode, this.tool.buildingType);
     this.refresh();
 
@@ -95,12 +133,74 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  /** Liegt der Bildschirmpunkt auf dem Menü, dem Hinweis oder der Kassen-Anzeige? */
+  /** Liegt der Bildschirmpunkt auf einem Element der Oberfläche? Dann baut ein Klick nichts. */
   containsPoint(x: number, y: number): boolean {
     if (!this.mainPanel) return false;
-    return [this.mainPanel, this.subPanel, this.hint, this.cashText].some(
-      (o) => o.visible && o.getBounds().contains(x, y),
-    );
+    if (this.summaryPanel.visible) return true; // Die Zusammenfassung sperrt die Welt, bis „OK“ gedrückt ist.
+    return [
+      this.mainPanel,
+      this.subPanel,
+      this.hint,
+      this.cashText,
+      this.clockText,
+      this.statsText,
+      this.startButton.box,
+      this.startHint,
+    ].some((o) => o.visible && o.getBounds().contains(x, y));
+  }
+
+  /** Festival-Anzeigen jedes Bild abgleichen (Texte nur bei Änderung neu setzen). */
+  update(): void {
+    const f = this.festival;
+    const phase = f.phase;
+    const canStart = phase === 'building' && f.canStart();
+    const clock = phase === 'running' ? clockLabel(f.clock.second, f.clock.speed, f.clock.paused) : '';
+    const stats = phase === 'running' ? statsLabel(f.stats().guests, f.stats().satisfaction) : '';
+    const summary = phase === 'finished' && f.summary ? summaryLines(f.summary).join('\n') : '';
+    const key = `${this.scale.width}x${this.scale.height}|${phase}|${canStart}|${clock}|${stats}|${summary}`;
+    if (key === this.festivalKey) return;
+    this.festivalKey = key;
+    this.clockText.setVisible(phase === 'running').setText(clock);
+    this.statsText.setVisible(phase === 'running').setText(stats);
+    const building = phase === 'building';
+    this.startButton.box.setVisible(building).setFillStyle(canStart ? COLORS.uiButtonActive : COLORS.uiButton, canStart ? 1 : 0.6);
+    this.startButton.label.setVisible(building).setAlpha(canStart ? 1 : 0.6);
+    this.startHint.setVisible(building && !canStart);
+    const finished = phase === 'finished';
+    this.summaryPanel.setVisible(finished);
+    this.summaryText.setVisible(finished).setText(summary);
+    this.okButton.box.setVisible(finished);
+    this.okButton.label.setVisible(finished);
+    this.layoutFestival();
+  }
+
+  /** Ordnet Uhr, Start-Knopf, Gesamtanzeige und Zusammenfassung an. */
+  private layoutFestival(): void {
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const u = computeZoom(width, height);
+    const font = 5 * u;
+    for (const t of [this.clockText, this.statsText]) t.setFontSize(font).setPadding(3 * u, 2 * u, 3 * u, 2 * u);
+    this.clockText.setPosition(2 * u, 2 * u);
+    this.statsText.setPosition(Math.round(width / 2), 2 * u);
+
+    const bw = 70 * u;
+    const bh = 12 * u;
+    this.placeButton(this.startButton, Math.round((width - bw) / 2), 2 * u, bw, bh, 6 * u);
+    this.startHint.setFontSize(4 * u).setPadding(2 * u, u, 2 * u, u);
+    this.startHint.setPosition(Math.round(width / 2), 3 * u + bh);
+
+    this.summaryText.setFontSize(6 * u).setLineSpacing(2 * u);
+    const pw = Math.max(this.summaryText.width + 16 * u, 110 * u);
+    const ph = this.summaryText.height + 30 * u;
+    const cx = Math.round(width / 2);
+    const cy = Math.round(height / 2 - 10 * u);
+    this.summaryPanel.setPosition(cx, cy).setSize(pw, ph);
+    this.summaryPanel.input?.hitArea.setTo(0, 0, pw, ph);
+    this.summaryText.setPosition(cx, Math.round(cy - ph / 2 + 6 * u));
+    const ow = 30 * u;
+    const oh = 12 * u;
+    this.placeButton(this.okButton, cx - ow / 2, Math.round(cy + ph / 2 - oh - 5 * u), ow, oh, 6 * u);
   }
 
   private makeButton(text: string): Button {

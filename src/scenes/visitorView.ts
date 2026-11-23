@@ -57,10 +57,15 @@ export class VisitorView {
       // Fahrtrichtung aus der Bewegung seit dem letzten Bild (Front zeigt im Bild nach oben).
       const dx = c.x - entry.x;
       const dy = c.y - entry.y;
-      if (Math.abs(dx) + Math.abs(dy) > 0.001) entry.image.setAngle(Math.round((Math.atan2(dx, -dy) * 180) / Math.PI / 90) * 90);
+      // Geparkt steht ein Auto immer senkrecht in seiner Spalte des Stellplatzes.
+      if (c.state === 'parked') entry.image.setAngle(0);
+      else if (Math.abs(dx) + Math.abs(dy) > 0.001) {
+        entry.image.setAngle(Math.round((Math.atan2(dx, -dy) * 180) / Math.PI / 90) * 90);
+      }
       entry.x = c.x;
       entry.y = c.y;
-      entry.image.setPosition(px(c.x), px(c.y));
+      // Geparkt mittig im Stellplatz (Parkfeld ist dessen untere Hälfte), sonst auf der Fahrspur.
+      entry.image.setPosition(px(c.x), px(c.state === 'parked' ? c.y - 0.5 : c.y));
       if (c.stuck) this.showStuck(`car-${c.id}`, c.x, c.y - 0.9, seenStuck);
     }
     for (const [id, entry] of this.cars) {

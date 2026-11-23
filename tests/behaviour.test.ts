@@ -121,7 +121,7 @@ describe('Verhalten der Gäste', () => {
   it('Zuschauen endet, wenn ein anderes Bedürfnis dringend wird', () => {
     const w = world();
     const g = guestAt(3.5, 9.5, { music: 40, toilet: 80 });
-    g.state = { kind: 'watch' };
+    g.state = { kind: 'watch', path: [] };
     stepGuest(g, w);
     expect(g.state.kind).not.toBe('watch');
   });
@@ -138,5 +138,33 @@ describe('Verhalten – Ausweichen auf andere Bedürfnisse', () => {
       if (g.needs.toilet < 5) relieved = true;
     });
     expect(relieved).toBe(true);
+  });
+});
+
+describe('Verhalten – Verteilung', () => {
+  it('Zuschauer verteilen sich vor der Bühne statt sich auf einem Feld zu stapeln', () => {
+    const grid = new Grid(20, 20);
+    grid.addBuilding({ type: 'stage', x: 2, y: 2, width: 6, height: 4, facing: 'N', paidPrice: 4000 });
+    grid.applyPath([2, 3, 4, 5, 6, 7, 8].map((x) => ({ x, y: 1 })), true);
+    grid.applyPath(Array.from({ length: 19 }, (_, i) => ({ x: 8, y: 1 + i })), true);
+    const w: GuestWorld = { grid, offers: new Offers(grid), rng: new Random(2), second: 20 * 3600, door: { x: 4, y: 18 }, leaving: false };
+    const guests = Array.from({ length: 20 }, () => guestAt(4.5, 15.5, { music: 80 }));
+    for (let t = 0; t < 1500; t++) {
+      w.second += 2;
+      if (t % 30 === 0) w.offers.refresh(new RoadNetwork(grid), w.second);
+      for (const g of guests) stepGuest(g, w);
+    }
+    expect(guests.every((g) => g.state.kind === 'watch')).toBe(true);
+    expect(new Set(guests.map((g) => `${Math.floor(g.x)},${Math.floor(g.y)}`)).size).toBeGreaterThanOrEqual(10);
+  });
+  it('Umherschlendern bleibt in der Nähe des eigenen Zeltes', () => {
+    const grid = new Grid(40, 40);
+    const w: GuestWorld = { grid, offers: new Offers(grid), rng: new Random(5), second: 10 * 3600, door: { x: 20, y: 20 }, leaving: false };
+    const g = guestAt(20.5, 20.5, {});
+    let farthest = 0;
+    simulate(w, g, 20000, () => {
+      farthest = Math.max(farthest, Math.hypot(g.x - 20.5, g.y - 20.5));
+    });
+    expect(farthest).toBeLessThanOrEqual(Math.SQRT2 * 5 + 0.5);
   });
 });

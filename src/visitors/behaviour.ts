@@ -103,7 +103,10 @@ function seek(g: Guest, w: GuestWorld): void {
   // Am Ziel: erst in die Feldmitte, dann anstellen bzw. zuschauen.
   if (!moveToward(g, center(here), TUNING.walkPerTick)) return;
   if (type === 'stage') {
-    g.state = { kind: 'watch' };
+    // Einen zufälligen Platz im Zuschauerbereich suchen, damit sich die Menge verteilt.
+    const spots = w.offers.audienceAt(here.x, here.y) ?? [here];
+    const spot = w.rng.pick(spots);
+    g.state = { kind: 'watch', path: findPath(w.grid, here, spot) ?? [] };
     return;
   }
   const b = w.offers.buildingAtService(here.x, here.y);
@@ -123,9 +126,10 @@ function stroll(g: Guest, w: GuestWorld): void {
     s.waitTicks--;
     return;
   }
+  // Ziel in der Nähe des eigenen Zeltes: Der Zeltplatz ist das Zuhause der Gäste.
   const here = cellOf(g);
   const r = TUNING.wanderRadius;
-  const target = { x: here.x + w.rng.int(-r, r + 1), y: here.y + w.rng.int(-r, r + 1) };
+  const target = { x: w.door.x + w.rng.int(-r, r + 1), y: w.door.y + w.rng.int(-r, r + 1) };
   s.path = (isWalkable(w.grid, target.x, target.y) && findPath(w.grid, here, target)) || [];
   s.waitTicks = w.rng.int(TUNING.wanderWaitTicks.min, TUNING.wanderWaitTicks.max + 1);
 }
@@ -198,7 +202,11 @@ export function stepGuest(g: Guest, w: GuestWorld): void {
       // 8. Zuschauen, bis die Bühne zu ist, die Musik reicht oder etwas anderes drängt
       const stageGone = w.offers.field('stage').distance(here.x, here.y) === Infinity;
       const other = (['thirst', 'hunger', 'toilet', 'souvenir'] as const).some((n) => g.needs[n] >= TUNING.urgentAt);
-      if (stageGone || g.needs.music <= 0 || other) g.state = wander(w);
+      if (stageGone || g.needs.music <= 0 || other) {
+        g.state = wander(w);
+        return;
+      }
+      if (g.state.path.length > 0 && walkPath(g, g.state.path, w.grid) === 'blocked') g.state.path = [];
       return;
     }
     case 'wander':

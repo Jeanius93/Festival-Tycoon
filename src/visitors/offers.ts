@@ -55,6 +55,8 @@ export class Offers {
   private readonly queues = new Map<number, number[]>();
   private readonly progress = new Map<number, number>();
   private readonly services = new Map<number, Building>();
+  /** Feld → Zuschauerbereich der offenen Bühne, zu der es gehört */
+  private readonly audiences = new Map<number, Cell[]>();
   private dissolved: number[] = [];
   private maskKey = '';
   private readonly goalKeys = new Map<BuildingType, string>();
@@ -68,6 +70,7 @@ export class Offers {
   refresh(roads: RoadNetwork, second: number): void {
     this.open.clear();
     this.services.clear();
+    this.audiences.clear();
     for (const b of this.grid.buildings()) {
       const open = isDelivered(this.grid, b, roads) && (b.type !== 'stage' || isStageTime(second));
       if (!open) continue;
@@ -75,6 +78,9 @@ export class Offers {
       if (b.type !== 'stage') {
         const s = serviceCell(b);
         this.services.set(s.y * this.grid.width + s.x, b);
+      } else {
+        const cells = audienceCells(this.grid, b);
+        for (const c of cells) this.audiences.set(c.y * this.grid.width + c.x, cells);
       }
     }
     for (const [id, queue] of this.queues) {
@@ -127,6 +133,11 @@ export class Offers {
   /** Offener Stand bzw. offenes Klo, dessen Theke auf diesem Feld liegt. */
   buildingAtService(x: number, y: number): Building | null {
     return this.grid.inBounds(x, y) ? (this.services.get(y * this.grid.width + x) ?? null) : null;
+  }
+
+  /** Zuschauerbereich der offenen Bühne, zu dem dieses Feld gehört (sonst null). */
+  audienceAt(x: number, y: number): readonly Cell[] | null {
+    return this.grid.inBounds(x, y) ? (this.audiences.get(y * this.grid.width + x) ?? null) : null;
   }
 
   queue(id: number): readonly number[] {

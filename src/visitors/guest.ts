@@ -18,7 +18,7 @@ export type GuestState =
   | { kind: 'wander'; path: Cell[]; waitTicks: number }
   | { kind: 'seek'; type: BuildingType }
   | { kind: 'queue'; buildingId: number }
-  | { kind: 'watch' }
+  | { kind: 'watch'; path: Cell[] }
   | { kind: 'toTent'; path: Cell[]; purpose: 'sleep' | 'leave' }
   | { kind: 'inTent'; purpose: 'sleep' | 'leave' };
 
