@@ -50,14 +50,18 @@ Wichtig für den Nutzer:
 19. **Abreise:** Gäste gehen zu ihrem Zelt, Zelt verschwindet, das Auto fährt über die Wege zur Straße und verschwindet dort.
 20. **Ende:** Wenn alle abgereist sind, erscheint eine **Zusammenfassung**: Anzahl Gäste, durchschnittliche Zufriedenheit am Ende, wie viele früher abgereist sind. Danach ist alles wieder im Bauzustand (Zeltflächen bleiben, Zelte und Autos sind weg), und man kann **erneut starten**.
 21. Während des Festivals darf man **weiter bauen und abreißen** (außer auf Zelten/Autos, siehe 2.2). Gäste, die auf einem Feld stehen, das plötzlich blockiert ist, weichen auf das nächste freie Feld aus.
+22. **Eingesperrt (vom Nutzer gewählt: erlauben, mit Warnung):** Der Spieler darf auch Wege abreißen oder Zäune ziehen, die Autos oder Gäste von ihrem Ziel abschneiden. Es wird nichts verboten.
+    - Ein Auto, das keinen Weg mehr zur Straße (bzw. zu seinem Stellplatz) hat, **wartet** an seiner Stelle und zeigt ein **Warnsymbol**. Ein Gast, der sein Zelt nicht mehr erreicht, zeigt ebenfalls ein Warnsymbol und **verliert Laune**. Sobald der Weg wieder frei ist, geht es normal weiter.
+    - Autos fahren dabei **nie** über die Wiese außerhalb der Zeltfläche.
+    - Ist **4 Spielstunden nach Beginn der Abreise** (Tag 4, 14:00) noch jemand da, wird er **abgeschleppt**: Auto, Zelt und Gäste verschwinden, und das Festival endet trotzdem. Die Zusammenfassung nennt, wie viele abgeschleppt wurden.
 
 ### 2.5 Gäste: Laufen
-22. Gäste sind kleine Pixel-Figuren und laufen **frei über das Gelände**: über Wiese, Wege, Zeltflächen und durch **Besucher-Schleusen**. **Nicht** durch Zäune, Personal-Tore und Gebäude. Zelte und Autos dürfen sie durchlaufen (vereinfachend).
-23. Wegfindung mit **Wegweiser-Karten** (Ansatz A, siehe Abschnitt 5): Für jede Angebotsart gibt es eine Karte „Schritte bis zum nächsten erreichbaren, offenen Angebot dieser Art“. Gäste folgen ihr. Die Karten werden neu berechnet, wenn sich am Gelände etwas ändert (und regelmäßig wegen der Schlangen, siehe 27).
-24. Für Wege zu **einem bestimmten Ziel** (das eigene Zelt) nutzt jeder Gast eine eigene Wegsuche.
+23. Gäste sind kleine Pixel-Figuren und laufen **frei über das Gelände**: über Wiese, Wege, Zeltflächen und durch **Besucher-Schleusen**. **Nicht** durch Zäune, Personal-Tore und Gebäude. Zelte und Autos dürfen sie durchlaufen (vereinfachend).
+24. Wegfindung mit **Wegweiser-Karten** (Ansatz A, siehe Abschnitt 5): Für jede Angebotsart gibt es eine Karte „Schritte bis zum nächsten erreichbaren, offenen Angebot dieser Art“. Gäste folgen ihr. Die Karten werden neu berechnet, wenn sich am Gelände etwas ändert (und regelmäßig wegen der Schlangen, siehe 28).
+25. Für Wege zu **einem bestimmten Ziel** (das eigene Zelt) nutzt jeder Gast eine eigene Wegsuche.
 
 ### 2.6 Gäste: Bedürfnisse und Angebote
-25. Jeder Gast hat diese Bedürfnisse:
+26. Jeder Gast hat diese Bedürfnisse:
 
     | Bedürfnis | Wird erfüllt durch |
     |---|---|
@@ -69,24 +73,25 @@ Wichtig für den Nutzer:
     | Andenken | Merch-Stand (einmal pro Festival, Wunsch kommt irgendwann während des Festivals) |
 
     Hygiene/Duschen kommt erst, wenn es Duschen gibt.
-26. **Tagesrhythmus** (aus der Vision): Nachts schlafen die Gäste im Zelt (etwa 01:00 bis 08:00). Morgens sind sie eher auf dem Campingplatz (Klo, Essen). Nachmittags bis nachts zieht es sie zur Bühne. Die **Bühne spielt von 14:00 bis 01:00**; außerhalb dieser Zeit erfüllt sie kein Musik-Bedürfnis.
-27. **Stände:** Ein Gast stellt sich **vor der Vorderseite** an (Schlange nach außen). Bedienen dauert kurz. Eine **lange Schlange zählt in der Wegweiser-Karte wie ein Umweg**, sodass Gäste auf einen anderen Stand ausweichen. Lange Wartezeit senkt die Laune. Eine Schlange hat eine Höchstlänge; ist sie voll, gilt der Stand vorübergehend als nicht erreichbar.
-28. **Nicht belieferte Stände** (Warnsymbol aus M3) sind **geschlossen** und tauchen in den Wegweiser-Karten nicht auf. Das gilt für alle Gebäude mit Rückseite, also auch Klos und Bühne.
-29. **Bühne:** Zuschauer stellen sich in den Bereich **vor der Bühnenvorderseite** (nicht dahinter, nicht an die Seiten).
-30. **Kein Angebot erreichbar:** Gibt es für ein Bedürfnis kein erreichbares, offenes Angebot (z. B. kein Klo, Klo hinter Personal-Tor, Stand ohne Lieferweg), bleibt das Bedürfnis offen, die Denkblase bleibt sichtbar und die Laune sinkt. Der Gast schlendert umher und versucht es später erneut.
-31. **Geld:** In M4 bezahlen Gäste nichts. Die Kasse bleibt wie in M3.
+27. **Tagesrhythmus** (aus der Vision): Nachts schlafen die Gäste im Zelt (etwa 01:00 bis 08:00). Morgens sind sie eher auf dem Campingplatz (Klo, Essen). Nachmittags bis nachts zieht es sie zur Bühne. Die **Bühne spielt von 14:00 bis 01:00**; außerhalb dieser Zeit erfüllt sie kein Musik-Bedürfnis.
+28. **Stände:** Ein Gast stellt sich **vor der Vorderseite** an (Schlange nach außen). Bedienen dauert kurz. Eine **lange Schlange zählt in der Wegweiser-Karte wie ein Umweg**, sodass Gäste auf einen anderen Stand ausweichen. Lange Wartezeit senkt die Laune. Eine Schlange hat eine Höchstlänge; ist sie voll, gilt der Stand vorübergehend als nicht erreichbar.
+29. **Nicht belieferte Stände** (Warnsymbol aus M3) sind **geschlossen** und tauchen in den Wegweiser-Karten nicht auf. Das gilt für alle Gebäude mit Rückseite, also auch Klos und Bühne.
+30. **Neue Lieferregel (vom Nutzer gewählt):** Ein Gebäude gilt nur noch als **beliefert**, wenn ein Weg an seiner Rückseite anliegt **und dieser Weg über Wege (auch durch Personal-Tore) mit der Straße verbunden ist**. Ein Wegstück, das nirgendwo hinführt, reicht nicht mehr. Das ändert die Regel aus M3: Das Warnsymbol erscheint jetzt auch bei einem Lieferweg ohne Verbindung zur Straße und verschwindet sofort, wenn die Verbindung hergestellt ist. Dieselbe Verbindungsprüfung gilt für Zeltflächen (2.2, Punkt 9).
+31. **Bühne:** Zuschauer stellen sich in den Bereich **vor der Bühnenvorderseite** (nicht dahinter, nicht an die Seiten).
+32. **Kein Angebot erreichbar:** Gibt es für ein Bedürfnis kein erreichbares, offenes Angebot (z. B. kein Klo, Klo hinter Personal-Tor, Stand ohne Lieferweg), bleibt das Bedürfnis offen, die Denkblase bleibt sichtbar und die Laune sinkt. Der Gast schlendert umher und versucht es später erneut.
+33. **Geld:** In M4 bezahlen Gäste nichts. Die Kasse bleibt wie in M3.
 
 ### 2.7 Zufriedenheit und Anzeige
-32. Jeder Gast hat eine **Zufriedenheit** (0–100 %). Sie steigt, wenn Bedürfnisse erfüllt werden (Abwechslung beim Essen zählt extra) und Musik läuft, und sinkt bei unerfüllten Bedürfnissen und langen Schlangen.
-33. **Denkblasen (A):** Über einem Gast erscheint ein kleines Symbol für sein dringendstes offenes Bedürfnis (Bier, Essen, Klo, Note, Zelt/Mond, Merch-Shirt). Sehr unzufriedene Gäste zeigen ein eigenes Symbol (z. B. Gewitterwolke).
-34. **Gesamtanzeige (C)** oben: **„Gäste: 84 · Zufriedenheit: 72 %“** (Durchschnitt aller anwesenden Gäste) neben Uhr und Kasse.
-35. **Früher Heimfahren:** Fällt die Zufriedenheit eines Gastes für eine gewisse Zeit unter eine Grenze (Startwert: unter 25 % für 2 Spielstunden), reist seine Gruppe ab (Zelt weg, Auto fährt). Der Stellplatz wird frei. Neue Gäste kommen dafür nur nach, solange die Anreisezeit läuft.
+34. Jeder Gast hat eine **Zufriedenheit** (0–100 %). Sie steigt, wenn Bedürfnisse erfüllt werden (Abwechslung beim Essen zählt extra) und Musik läuft, und sinkt bei unerfüllten Bedürfnissen und langen Schlangen.
+35. **Denkblasen (A):** Über einem Gast erscheint ein kleines Symbol für sein dringendstes offenes Bedürfnis (Bier, Essen, Klo, Note, Zelt/Mond, Merch-Shirt). Sehr unzufriedene Gäste zeigen ein eigenes Symbol (z. B. Gewitterwolke).
+36. **Gesamtanzeige (C)** oben: **„Gäste: 84 · Zufriedenheit: 72 %“** (Durchschnitt aller anwesenden Gäste) neben Uhr und Kasse.
+37. **Früher Heimfahren:** Fällt die Zufriedenheit eines Gastes für eine gewisse Zeit unter eine Grenze (Startwert: unter 25 % für 2 Spielstunden), reist seine Gruppe ab (Zelt weg, Auto fährt). Der Stellplatz wird frei. Neue Gäste kommen dafür nur nach, solange die Anreisezeit läuft.
 
 ### 2.8 Bedienung und Sonstiges
-36. **Tastatur:** Leertaste (Pause) und 1/2/3 (Geschwindigkeit) sind neu. Alle bisherigen Tasten bleiben.
-37. **Höchstens 300 Gäste**; das Spiel muss dabei auf PC, Handy und MSI Claw flüssig laufen.
-38. **Tests:** Die neue Logik liegt wie bisher in Phaser-freien Modulen und wird mit Vitest getestet (siehe Abschnitt 7). Die Simulation nutzt einen **Zufallsgenerator mit festem Startwert**, damit Tests wiederholbar sind.
-39. `GAME_DESIGN.md`, `CLAUDE.md` und die Steuerungstabelle in `README.md` werden aktualisiert (siehe Abschnitt 9).
+38. **Tastatur:** Leertaste (Pause) und 1/2/3 (Geschwindigkeit) sind neu. Alle bisherigen Tasten bleiben.
+39. **Höchstens 300 Gäste**; das Spiel muss dabei auf PC, Handy und MSI Claw flüssig laufen.
+40. **Tests:** Die neue Logik liegt wie bisher in Phaser-freien Modulen und wird mit Vitest getestet (siehe Abschnitt 7). Die Simulation nutzt einen **Zufallsgenerator mit festem Startwert**, damit Tests wiederholbar sind.
+41. `GAME_DESIGN.md`, `CLAUDE.md` und die Steuerungstabelle in `README.md` werden aktualisiert (siehe Abschnitt 9).
 
 ## 3. Nicht-Ziele (kommt später)
 
@@ -112,6 +117,8 @@ Wichtig für den Nutzer:
 - Geschwindigkeit 3 verändert das Verhalten der Gäste (statt es nur zu beschleunigen).
 - Bauen, Abreißen, Kamera, Zoom, Menü und Kasse aus M1–M3 funktionieren schlechter als vorher.
 - Ein Festival endet nie (Gäste bleiben hängen und reisen nicht ab), oder nach dem Ende kann man nicht neu starten.
+- Ein Stand gilt als beliefert, obwohl sein Lieferweg nicht bis zur Straße führt (oder umgekehrt).
+- Ein eingesperrtes Auto oder ein eingesperrter Gast zeigt kein Warnsymbol, sodass man nicht merkt, was man kaputt gemacht hat.
 
 ## 5. Ansätze
 
@@ -152,6 +159,23 @@ Wichtig für den Nutzer:
 ### Woran merkt man, was den Gästen fehlt?
 **Entscheidung des Nutzers:** Denkblasen über den Köpfen **und** Gesamtanzeige oben (A + C). Gast anklicken (B) und Bewertungen (D) kommen später.
 
+### Was passiert, wenn der Spieler Gäste oder Autos einsperrt?
+| Ansatz | Bewertung |
+|---|---|
+| **A) Erlauben, mit Warnung; an Tag 4 abschleppen (gewählt)** | Man sieht den Fehler und kann ihn reparieren; das Festival endet immer. |
+| B) Verbieten (Vorschau rot) | Sicher, aber viel mehr Arbeit, und rote Vorschauen sind manchmal schwer zu verstehen. |
+| C) Notausgang über die Wiese | Einfach, aber Wege verlieren an Bedeutung. |
+
+**Entscheidung des Nutzers:** A.
+
+### Muss der Lieferweg eines Stands bis zur Straße führen?
+| Ansatz | Bewertung |
+|---|---|
+| **A) Ja, Verbindung zur Straße nötig (gewählt)** | Einheitlich mit den Zeltflächen und logisch (der Lieferwagen kommt über die Straße). Ändert die Regel aus M3. |
+| B) Nein, ein Wegstück hinter dem Stand reicht | Einfacher, aber man kann „schummeln“. |
+
+**Entscheidung des Nutzers:** A.
+
 ### Was passiert mit sehr unzufriedenen Gästen?
 **Entscheidung des Nutzers:** Sie fahren früher heim (A), statt nur zu meckern (B).
 
@@ -167,6 +191,8 @@ Wichtig für den Nutzer:
 - Sehr unzufriedene Gäste fahren früher heim.
 - Wegfindung über Wegweiser-Karten.
 - Personal gibt es (Putzhilfen, Techniker, Security); es kommt in M8.
+- Einsperren ist erlaubt, mit Warnsymbol; wer an Tag 4 um 14:00 noch festhängt, wird abgeschleppt.
+- Beliefert ist ein Gebäude nur, wenn sein Lieferweg bis zur Straße führt.
 
 **Von Claude festgelegt (bitte beim Lesen prüfen):**
 - Personal kommt nicht in M4, sondern wie geplant in M8.
@@ -201,6 +227,7 @@ Logik und Darstellung bleiben getrennt wie in M1–M3. Die Simulation rechnet in
 | `src/core/clock.ts` (neu) | Spieluhr: Tag, Uhrzeit, Pause, Geschwindigkeit; feste Zeitschritte. |
 | `src/core/random.ts` (neu) | Zufallsgenerator mit festem Startwert. |
 | `src/building/grid.ts` | Neue Ebene pro Feld: **Zeltflächen-Markierung**. Änderungen werden wie bisher gemeldet. |
+| `src/building/placement.ts` | `isDelivered` prüft zusätzlich die Verbindung zur Straße (gemeinsame Verbindungsprüfung mit den Zeltflächen, z. B. in einem eigenen Modul `src/building/roadNetwork.ts`). Bestehende Tests aus M3 werden angepasst. |
 | `src/building/rules.ts` | Regeln für Zeltfläche (wo markieren erlaubt) und gegenseitige Regeln mit Zaun, Weg, Gebäude, Zelt. |
 | `src/building/buildTool.ts` | Neuer Modus „Zeltfläche“ (Rechteck ziehen); Abreißen entfernt auch Markierungen; Bauen auf Zelten verboten. |
 | `src/camping/` (neu) | Zusammenhängende Zeltflächen erkennen, Stellplätze verteilen und vergeben, „angeschlossen?“ prüfen. |
@@ -230,7 +257,8 @@ Wer was abfragen kann (wichtig für M5–M8):
    - Nach „Festival starten“ läuft die Uhr; Leertaste pausiert, 1/2/3 ändern die Geschwindigkeit.
    - Autos fahren über die Wege zur Zeltfläche, Zelte erscheinen, Gäste laufen los.
    - Gäste gehen zu Bierstand, Essensständen, Klos und Bühne, stellen sich vorne an, gehen nachts ins Zelt.
-   - Ein Stand ohne Lieferweg bleibt leer; ein Stand hinter einem Personal-Tor auch.
+   - Ein Stand ohne Lieferweg bleibt leer; ein Stand hinter einem Personal-Tor auch. Ein Stand, dessen Lieferweg nicht bis zur Straße führt, zeigt das Warnsymbol und bleibt ebenfalls leer.
+   - Reißt man einen Weg ab, den Autos zum Heimfahren brauchen, zeigen sie ein Warnsymbol; baut man ihn wieder, fahren sie weiter. Wer an Tag 4 um 14:00 noch feststeckt, wird abgeschleppt.
    - Denkblasen zeigen, was fehlt; ohne Klo sieht man viele Klo-Blasen und die Zufriedenheit sinkt; baut man Klos nach, wird es besser.
    - Sehr unzufriedene Gäste fahren früher heim.
    - Nach Tag 3 reisen alle ab, die Zusammenfassung erscheint, man kann neu starten.
@@ -242,7 +270,7 @@ Wer was abfragen kann (wichtig für M5–M8):
 
 Werden zusammen mit diesem Design-Dokument eingetragen:
 - **1.1 Aufbau des Geländes:** Der Campingplatz ist nicht mehr einfach „die ganze Wiese außerhalb der Zäune“, sondern der Spieler **legt Zeltflächen fest** (aufziehen). Dort stehen Zelte und Autos der Gäste. Bühnengelände und Backstage entstehen weiter durch Zäune.
-- **1.2 Wege:** Die Gäste kommen mit dem Auto über eine **Zufahrtsstraße**; Autos fahren nur auf Wegen. Eine Zeltfläche braucht eine Wegverbindung zur Straße.
+- **1.2 Wege:** Die Gäste kommen mit dem Auto über eine **Zufahrtsstraße**; Autos fahren nur auf Wegen. Eine Zeltfläche braucht eine Wegverbindung zur Straße. **Lieferwege müssen ebenfalls bis zur Straße führen**, sonst gilt ein Gebäude als nicht beliefert.
 - **5. Steuerung:** Leertaste und 1/2/3 sind ab M4 aktiv.
 - **7. Besucher-Simulation:** Lange Schlangen lassen Gäste auf andere Stände ausweichen; nicht belieferte Stände sind geschlossen; sehr unzufriedene Gäste reisen früher ab; Gäste zeigen Denkblasen.
 - **11. Meilensteine, M4:** „Besucher: Anreise mit dem Auto über die Zufahrtsstraße, Zeltflächen, Bedürfnisse, Stände aufsuchen, Spieluhr mit Festival-Start und Abreise“.
