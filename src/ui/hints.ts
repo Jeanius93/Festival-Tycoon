@@ -7,6 +7,7 @@ export const TOOL_LABELS: Record<ToolMode, string> = {
   fence: 'Zaun',
   visitorGate: 'Schleuse',
   staffGate: 'Tor',
+  building: 'Gebäude',
   demolish: 'Abreißen',
 };
 
@@ -17,5 +18,6 @@ export const TOOL_HINTS: Record<ToolMode, string> = {
   fence: 'Ziehen: Zaun bauen · R: Ecke drehen · Rechtsklick: Abbrechen',
   visitorGate: 'Klick in geraden Zaun: Schleuse für Gäste · Rechtsklick: Ansehen',
   staffGate: 'Klick in geraden Zaun: Tor für Personal und Lieferwagen (Weg darf durch) · Rechtsklick: Ansehen',
+  building: 'Gebäude wählen',
   demolish: 'Ziehen: alles abreißen · Entf: Abreißen aus · Rechtsklick: Abbrechen',
 };

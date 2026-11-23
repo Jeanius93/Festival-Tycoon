@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Grid } from '../src/building/grid';
 import { BuildTool } from '../src/building/buildTool';
+import { Cash } from '../src/economy/cash';
 
 const setup = () => {
   const grid = new Grid(10, 10);
-  return { grid, tool: new BuildTool(grid) };
+  return { grid, tool: new BuildTool(grid, new Cash(10000)) };
 };
 
 describe('BuildTool', () => {
@@ -218,5 +219,129 @@ describe('BuildTool', () => {
     expect(tool.mode).toBe('demolish');
     tool.toggleDemolish();
     expect(tool.mode).toBe('fence');
+  });
+});
+
+describe('BuildTool – Gebäude', () => {
+  const setupCash = (balance = 10000) => {
+    const grid = new Grid(20, 20);
+    const cash = new Cash(balance);
+    return { grid, cash, tool: new BuildTool(grid, cash) };
+  };
+  const click = (tool: BuildTool, x: number, y: number) => {
+    tool.pointerMove({ x, y });
+    tool.pointerDown({ x, y });
+    return tool.pointerUp();
+  };
+
+  it('Klick stellt den Bierstand hin und bucht ab; Werkzeug bleibt aktiv', () => {
+    const { grid, cash, tool } = setupCash();
+    tool.selectBuilding('beer');
+    expect(click(tool, 5, 5)).toHaveLength(6);
+    expect(grid.buildingAt(4, 5)).toMatchObject({ type: 'beer', x: 4, y: 5, width: 3, height: 2, facing: 'N', paidPrice: 600 });
+    expect(cash.balance).toBe(9400);
+    expect(tool.mode).toBe('building');
+    expect(tool.buildingType).toBe('beer');
+  });
+  it('Vorschau zeigt Grundfläche, Rückseite und Urteil', () => {
+    const { tool } = setupCash();
+    tool.selectBuilding('beer');
+    tool.pointerMove({ x: 5, y: 5 });
+    expect(tool.preview).toMatchObject({
+      kind: 'building',
+      type: 'beer',
+      facing: 'N',
+      verdict: 'ok',
+      blocked: [],
+      back: [{ x: 4, y: 4 }, { x: 5, y: 4 }, { x: 6, y: 4 }],
+    });
+    expect(tool.preview?.cells).toHaveLength(6);
+  });
+  it('Vorschau mit Maus außerhalb ist null', () => {
+    const { tool } = setupCash();
+    tool.selectBuilding('beer');
+    tool.pointerMove({ x: -1, y: 5 });
+    expect(tool.preview).toBeNull();
+  });
+  it('R im Gebäude-Modus dreht und meldet sofort', () => {
+    const { grid, tool } = setupCash();
+    const l = vi.fn();
+    tool.selectBuilding('beer');
+    tool.pointerMove({ x: 5, y: 5 });
+    tool.onChange(l);
+    tool.rotate();
+    expect(l).toHaveBeenCalledTimes(1);
+    expect(tool.facing).toBe('E');
+    expect(tool.preview).toMatchObject({ rect: { x: 5, y: 4, width: 2, height: 3 } });
+    click(tool, 5, 5);
+    expect(grid.buildingAt(5, 4)).toMatchObject({ facing: 'E', width: 2, height: 3 });
+  });
+  it('Klick am Rand baut nichts', () => {
+    const { grid, cash, tool } = setupCash();
+    tool.selectBuilding('stage');
+    expect(click(tool, 0, 0)).toEqual([]);
+    expect(grid.buildings()).toEqual([]);
+    expect(cash.balance).toBe(10000);
+    tool.pointerMove({ x: 0, y: 0 });
+    expect(tool.preview).toMatchObject({ verdict: 'blocked', cells: [] });
+    expect(tool.preview?.blocked).toHaveLength(12); // nur die Felder innerhalb des Grundstücks
+  });
+  it('zu teuer: rot, nichts gebaut', () => {
+    const { grid, cash, tool } = setupCash(3999);
+    tool.selectBuilding('stage');
+    tool.pointerMove({ x: 10, y: 10 });
+    expect(tool.preview).toMatchObject({ verdict: 'tooExpensive', cells: [] });
+    expect(click(tool, 10, 10)).toEqual([]);
+    expect(grid.buildings()).toEqual([]);
+    expect(cash.balance).toBe(3999);
+  });
+  it('Abriss erstattet jedes Gebäude genau einmal und entfernt es ganz', () => {
+    const { grid, cash, tool } = setupCash();
+    tool.selectBuilding('beer');
+    click(tool, 5, 5); // belegt x 4..6, y 5..6
+    tool.selectBuilding('toilet');
+    click(tool, 8, 5);
+    grid.applyPath([{ x: 7, y: 5 }], true);
+    expect(cash.balance).toBe(10000 - 600 - 150);
+    tool.setMode('demolish');
+    tool.pointerDown({ x: 5, y: 5 });
+    tool.pointerMove({ x: 8, y: 5 });
+    expect(tool.preview?.kind).toBe('demolish');
+    expect(tool.preview?.cells).toHaveLength(4 + 4); // L-Felder (5..8, 5) plus die vier übrigen Bierstand-Felder
+    tool.pointerUp();
+    expect(grid.buildings()).toEqual([]);
+    expect(grid.isPath(7, 5)).toBe(false);
+    expect(cash.balance).toBe(10000);
+  });
+  it('Entf kehrt zum gewählten Gebäude mit derselben Richtung zurück', () => {
+    const { tool } = setupCash();
+    tool.selectBuilding('pizza');
+    tool.rotate();
+    tool.toggleDemolish();
+    tool.toggleDemolish();
+    expect([tool.mode, tool.buildingType, tool.facing]).toEqual(['building', 'pizza', 'E']);
+  });
+  it('setMode("building") ohne gewählte Art tut nichts', () => {
+    const { tool } = setupCash();
+    tool.setMode('building');
+    expect(tool.mode).toBe('view');
+  });
+  it('R im Weg-Modus dreht weiter die Ecke, nicht das Gebäude', () => {
+    const { tool } = setupCash();
+    tool.setMode('path');
+    tool.rotate();
+    expect(tool.facing).toBe('N');
+  });
+  it('Weg wird über ein Gebäude nicht gebaut', () => {
+    const { grid, tool } = setupCash();
+    tool.selectBuilding('toilet');
+    click(tool, 3, 0);
+    tool.setMode('path');
+    tool.pointerDown({ x: 0, y: 0 });
+    tool.pointerMove({ x: 5, y: 0 });
+    expect(tool.preview).toMatchObject({ blocked: [{ x: 3, y: 0 }] });
+    tool.pointerUp();
+    expect(grid.isPath(3, 0)).toBe(false);
+    expect(grid.isPath(5, 0)).toBe(true);
   });
 });

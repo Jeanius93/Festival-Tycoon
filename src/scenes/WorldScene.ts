@@ -6,11 +6,13 @@ import {
   EDGE_SCROLL_MARGIN,
   FIELD,
   TILE_SIZE,
+  START_CASH,
   ZOOM_LEVELS,
 } from '../config';
 import { TEXTURE_KEYS } from '../assets/placeholders';
 import { Grid, type Cell } from '../building/grid';
 import { BuildTool } from '../building/buildTool';
+import { Cash } from '../economy/cash';
 import { fenceMask, pathMask } from '../building/autotile';
 import { computeZoom } from '../core/zoom';
 import type { UIScene } from './UIScene';
@@ -67,7 +69,7 @@ export class WorldScene extends Phaser.Scene {
 
   create(): void {
     this.grid = new Grid(FIELD.width, FIELD.height);
-    this.tool = new BuildTool(this.grid);
+    this.tool = new BuildTool(this.grid, new Cash(START_CASH));
     this.shownPreview = [];
     this.panButton = null;
     this.pointerInside = false;
