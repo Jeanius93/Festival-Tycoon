@@ -22,7 +22,8 @@ Ein gemütliches **Tycoon-Spiel**, in dem man ein **Rockfestival** organisiert, 
 | **Bühnengelände** | Gäste feiern | Bühne, Essensstände, Bierbuden |
 | **Backstage** | Künstler, Technik, Logistik | Künstlerbereich, Technik, Anlieferung |
 
-- Die Bereiche werden **nicht markiert oder gemalt**, sondern entstehen wie auf einem echten Festival **durch Zäune**: Bühnengelände und Backstage sind eingezäunt, der **Campingplatz** ist die offene Wiese außerhalb der Zäune.
+- **Bühnengelände und Backstage** werden nicht markiert oder gemalt, sondern entstehen wie auf einem echten Festival **durch Zäune**.
+- Den **Campingplatz** legt der Spieler selbst fest: Er **zieht Zeltflächen auf** der Wiese außerhalb der Zäune auf. Dort stehen die Zelte und Autos der Gäste (je Stellplatz ein Zelt und ein Auto). Auf Zeltflächen dürfen auch Wege und Gebäude (z. B. Klos) stehen.
 - Wer einen Bereich betreten darf, regelt die Art des Durchgangs im Zaun (siehe 1.3). Wofür ein Bereich da ist, ergibt sich aus dem, was man hineinbaut (Bühne, Bierbude, Künstlerzelt).
 - **Tagesrhythmus:** Die Gäste sind nachts und morgens auf dem Campingplatz (zelten, Müll, Dixi-Klos, Essplätze) und nachmittags bis nachts auf dem Bühnengelände (trinken, feiern, Bands schauen).
 - **Personal** (Security, Reinigung, Technik) und Künstler schlafen im Backstage, das Personal arbeitet aber auf dem ganzen Gelände.
@@ -30,8 +31,9 @@ Ein gemütliches **Tycoon-Spiel**, in dem man ein **Rockfestival** organisiert, 
 ### 1.2 Wege
 
 - Besucher laufen **frei über die Wiese**, wie auf einem echten Festival.
+- **Zufahrtsstraße:** Am Rand des Grundstücks verläuft eine feste Landstraße. Über sie reisen die Gäste mit dem Auto an. **Fahrzeuge fahren nur auf Wegen**, deshalb braucht jede Zeltfläche eine Wegverbindung zur Straße.
 - **Wege sind Versorgungsadern:** Über sie kommen Lieferungen (Bier, Essen) zu den Ständen, Technik zur Bühne und Künstler in den Backstage-Bereich. Ein Stand ohne Wegverbindung wird schlecht oder gar nicht beliefert.
-- **Lieferseite:** Jedes Gebäude hat eine Vorderseite für die Gäste und eine Rückseite für die Lieferung. Beliefert wird über einen Weg, der an der Rückseite anliegt. Ohne Lieferweg darf gebaut werden, das Gebäude zeigt aber eine Warnung. Deshalb lassen sich Gebäude drehen.
+- **Lieferseite:** Jedes Gebäude hat eine Vorderseite für die Gäste und eine Rückseite für die Lieferung. Beliefert wird über einen Weg, der an der Rückseite anliegt **und bis zur Straße führt**. Nicht belieferte Gebäude sind geschlossen. Ohne Lieferweg darf gebaut werden, das Gebäude zeigt aber eine Warnung. Deshalb lassen sich Gebäude drehen.
 - Bei Regen wird die Wiese matschig, Wege bleiben gut befahrbar.
 
 ### 1.3 Zäune und Durchgänge
@@ -106,6 +108,8 @@ Ziel: Nach jedem Merge in den Hauptzweig (`main`) ist das Spiel automatisch unte
 | Leertaste | Pause |
 | 1 / 2 / 3 | Spielgeschwindigkeit |
 
+Leertaste und 1/2/3 sind ab M4 aktiv (Spieluhr während des Festivals).
+
 - Objekte rasten auf dem Raster ein
 - Vorschau des Objekts unter dem Mauszeiger (grün = erlaubt, rot = nicht erlaubt)
 - UI mit großen, klaren Kacheln, damit später eine Controller- und Touch-Steuerung leicht nachrüstbar ist
@@ -158,6 +162,10 @@ Jeder Besucher ist eine kleine Pixel-Figur mit eigenen Werten:
 - Daraus ergibt sich eine **Zufriedenheit** pro Besucher
 - Besucher suchen sich per Wegfindung das nächste passende Angebot und laufen dabei frei über die Wiese (Wege sind für die Logistik, siehe 1.2)
 - Lange Schlangen, Dreck und Matsch senken die Laune
+- Lange Schlangen zählen wie ein Umweg: Gäste weichen auf einen anderen Stand derselben Art aus
+- Gäste zeigen über dem Kopf **Denkblasen** mit ihrem dringendsten Bedürfnis; oben steht die Gesamtzahl der Gäste und ihre durchschnittliche Zufriedenheit
+- Sehr unzufriedene Gäste **reisen früher ab**
+- Wer durch Umbauen eingesperrt wird (kein Weg mehr zum Zelt oder zur Straße), zeigt eine Warnung; wer am Ende noch festhängt, wird abgeschleppt
 - Besucher schreiben Bewertungen (z. B. „Klo-Situation katastrophal, 2/5“)
 
 ---
@@ -214,7 +222,7 @@ Jeder Meilenstein wird einzeln umgesetzt: Brainstorming → Design → Plan → 
 | **M1** | Wiese mit Raster, Kamera verschieben und zoomen, Wege per Klick und Ziehen bauen und abreißen |
 | **M2** | Geländebereiche: Zäune, Besucher-Schleusen und Personal-Tore (Bühnengelände und Backstage einzäunen, Campingplatz ist die offene Wiese) |
 | **M3** | Objekte platzieren: Bau-Menü, Bühne, Bier-, Essens- und Merch-Stände, Dixi-Klo (mit Vorschau, Drehen, Lieferseite, Kasse und Kosten) |
-| **M4** | Besucher: laufen frei über das Gelände, haben Bedürfnisse, suchen passende Angebote auf |
+| **M4** | Besucher: Anreise mit dem Auto über die Zufahrtsstraße, Zeltflächen, Bedürfnisse, Stände aufsuchen, Spieluhr mit Festival-Start und Abreise |
 | **M5** | Wirtschaft: Einnahmen und Ausgaben, Ticketpreis, Geldanzeige |
 | **M6** | Phasen-System: Planung → Vorbereitung → Festivalwoche → Abbau, Jahresabschluss |
 | **M7** | Ruf und Wachstum über die Jahre, erste Freischaltungen |

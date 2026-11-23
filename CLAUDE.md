@@ -17,7 +17,7 @@
 | M1 – Wiese, Raster, Kamera, Wege | ✅ fertig, gemergt, läuft auf GitHub Pages |
 | M2 – Geländebereiche (Zäune & Durchgänge) | ✅ fertig, gemergt, läuft auf GitHub Pages |
 | M3 – Objekte platzieren (Bau-Menü, Gebäude, Kasse) | ✅ fertig, gemergt, läuft auf GitHub Pages |
-| M4 – Besucher | 🔄 in Arbeit (Brainstorming) |
+| M4 – Besucher | 🔄 in Arbeit (Design freigegeben, Plan folgt) |
 | M5 bis M10 | offen |
 
 ## Vor jeder Aufgabe
