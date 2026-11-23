@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Grid } from '../src/building/grid';
-import { DIR, fenceMask, pathMask } from '../src/building/autotile';
+import { DIR, campMask, fenceMask, pathMask } from '../src/building/autotile';
 
 describe('pathMask', () => {
   it('einzelnes Feld → 0', () => {
@@ -35,5 +35,18 @@ describe('fenceMask', () => {
       { x: 5, y: 6, path: true },
     ]);
     expect(fenceMask(g, 5, 5)).toBe(DIR.N | DIR.E);
+  });
+});
+
+describe('Straße und Zeltfläche', () => {
+  it('Weg auf der untersten Reihe ist nach unten an die Straße angeschlossen', () => {
+    const g = new Grid(5, 5);
+    g.applyPath([{ x: 2, y: 4 }], true);
+    expect(pathMask(g, 2, 4)).toBe(DIR.S);
+  });
+  it('campMask zählt markierte Nachbarn', () => {
+    const g = new Grid(5, 5);
+    g.apply([{ x: 2, y: 2, camp: true }, { x: 3, y: 2, camp: true }, { x: 2, y: 3, camp: true }]);
+    expect(campMask(g, 2, 2)).toBe(DIR.E | DIR.S);
   });
 });

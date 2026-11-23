@@ -1,7 +1,7 @@
 import type { CellChange, Grid, Orientation } from './grid';
 
-/** Was gebaut werden soll. */
-export type BuildKind = 'path' | 'fence' | 'visitorGate' | 'staffGate';
+/** Was gebaut werden soll ('camp' = Zeltfläche markieren). */
+export type BuildKind = 'path' | 'fence' | 'visitorGate' | 'staffGate' | 'camp';
 
 /** Ergebnis für ein Feld: bauen, nichts zu tun oder nicht erlaubt. */
 export type Verdict = 'build' | 'skip' | 'blocked';
@@ -22,9 +22,16 @@ export function verdict(grid: Grid, kind: BuildKind, x: number, y: number): Verd
   if (!grid.inBounds(x, y)) return 'blocked';
   // Auf Gebäudefeldern wird weder Weg noch Zaun noch Durchgang gebaut.
   if (grid.buildingAt(x, y)) return 'blocked';
+  // Auf Stellplätzen mit Zelt oder Auto wird nichts gebaut.
+  if (grid.isOccupied(x, y)) return 'blocked';
   const structure = grid.structureAt(x, y);
   const path = grid.isPath(x, y);
+  // Zeltflächen sind kein Platz für Zäune und Durchgänge (Wege und Gebäude dürfen darauf).
+  if (kind !== 'path' && kind !== 'camp' && grid.isCamp(x, y)) return 'blocked';
   switch (kind) {
+    case 'camp':
+      if (structure !== 'none') return 'blocked';
+      return grid.isCamp(x, y) ? 'skip' : 'build';
     case 'path':
       if (structure === 'fence' || structure === 'visitorGate') return 'blocked';
       return path ? 'skip' : 'build';
@@ -46,6 +53,7 @@ export function verdict(grid: Grid, kind: BuildKind, x: number, y: number): Verd
 export function changeFor(grid: Grid, kind: BuildKind, x: number, y: number): CellChange {
   if (kind === 'path') return { x, y, path: true };
   if (kind === 'fence') return { x, y, structure: 'fence' };
+  if (kind === 'camp') return { x, y, camp: true };
   // Ein vorhandener Durchgang behält beim Umwandeln seine Ausrichtung.
   const orientation = grid.gateOrientationAt(x, y) ?? placementOrientation(grid, x, y);
   if (!orientation) throw new Error('Durchgang ohne Zaun auf zwei gegenüberliegenden Seiten');

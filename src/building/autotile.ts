@@ -16,9 +16,16 @@ function neighbourMask(test: (x: number, y: number) => boolean, x: number, y: nu
 /**
  * Welche Nachbarn eines Feldes sind Weg? Ergebnis 0 … 15 (Summe der DIR-Bits).
  * Die Zahl ist zugleich das passende Wegstück im Weg-Tileset.
+ * Ein Weg auf der untersten Reihe ist nach unten an die Straße angeschlossen.
  */
 export function pathMask(grid: Grid, x: number, y: number): number {
-  return neighbourMask((nx, ny) => grid.isPath(nx, ny), x, y);
+  const road = y === grid.height - 1 ? DIR.S : 0;
+  return neighbourMask((nx, ny) => grid.isPath(nx, ny), x, y) | road;
+}
+
+/** Welche Nachbarn gehören zu einer Zeltfläche? Zugleich das passende Stück im Zeltflächen-Tileset. */
+export function campMask(grid: Grid, x: number, y: number): number {
+  return neighbourMask((nx, ny) => grid.isCamp(nx, ny), x, y);
 }
 
 /** Welche Nachbarn sind Zaun oder Durchgang? Zugleich das passende Zaunstück im Zaun-Tileset. */

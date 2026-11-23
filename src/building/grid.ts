@@ -38,6 +38,8 @@ export interface CellChange {
   path?: boolean;
   structure?: Structure;
   orientation?: Orientation;
+  /** Zeltflächen-Markierung setzen (true) oder entfernen (false). */
+  camp?: boolean;
 }
 
 const GROUND_GRASS = 0;
@@ -61,13 +63,16 @@ function encode(structure: Structure, orientation: Orientation | undefined): num
 
 /**
  * Das Grundstück als reines Datenmodell (ohne Grafik).
- * Pro Feld: Boden (Wiese/Weg), Bau (nichts/Zaun/Schleuse/Tor) und Gebäude (Kennnummer, 0 = keines).
+ * Pro Feld: Boden (Wiese/Weg), Bau (nichts/Zaun/Schleuse/Tor), Gebäude (Kennnummer, 0 = keines),
+ * Zeltflächen-Markierung und „belegt“ (Stellplatz mit Zelt/Auto während des Festivals).
  * Bauregeln prüft das Grid nicht, das macht rules.ts.
  */
 export class Grid {
   private readonly ground: Uint8Array;
   private readonly structure: Uint8Array;
   private readonly buildingIds: Uint16Array;
+  private readonly camp: Uint8Array;
+  private readonly occupied: Uint8Array;
   private readonly buildingList = new Map<number, Building>();
   private nextBuildingId = 1;
   private readonly listeners = new Set<(changed: Cell[]) => void>();
@@ -79,6 +84,8 @@ export class Grid {
     this.ground = new Uint8Array(width * height);
     this.structure = new Uint8Array(width * height);
     this.buildingIds = new Uint16Array(width * height);
+    this.camp = new Uint8Array(width * height);
+    this.occupied = new Uint8Array(width * height);
   }
 
   inBounds(x: number, y: number): boolean {
@@ -87,6 +94,31 @@ export class Grid {
 
   isPath(x: number, y: number): boolean {
     return this.inBounds(x, y) && this.ground[y * this.width + x] === GROUND_PATH;
+  }
+
+  /** Gehört das Feld zu einer Zeltfläche? */
+  isCamp(x: number, y: number): boolean {
+    return this.inBounds(x, y) && this.camp[y * this.width + x] === 1;
+  }
+
+  /** Steht auf dem Feld gerade ein Zelt oder Auto (bzw. ist der Stellplatz zugeteilt)? */
+  isOccupied(x: number, y: number): boolean {
+    return this.inBounds(x, y) && this.occupied[y * this.width + x] === 1;
+  }
+
+  /** Belegt (on = true) oder gibt Felder frei; liefert und meldet nur wirklich geänderte Felder. */
+  setOccupied(cells: readonly Cell[], on: boolean): Cell[] {
+    const changed: Cell[] = [];
+    const value = on ? 1 : 0;
+    for (const { x, y } of cells) {
+      if (!this.inBounds(x, y)) continue;
+      const i = y * this.width + x;
+      if (this.occupied[i] === value) continue;
+      this.occupied[i] = value;
+      changed.push({ x, y });
+    }
+    this.notify(changed);
+    return changed;
   }
 
   structureAt(x: number, y: number): Structure {
@@ -156,18 +188,20 @@ export class Grid {
       const i = y * this.width + x;
       const ground = change.path === undefined ? this.ground[i] : change.path ? GROUND_PATH : GROUND_GRASS;
       const code = change.structure === undefined ? this.structure[i] : encode(change.structure, change.orientation);
-      if (ground === this.ground[i] && code === this.structure[i]) continue;
+      const camp = change.camp === undefined ? this.camp[i] : change.camp ? 1 : 0;
+      if (ground === this.ground[i] && code === this.structure[i] && camp === this.camp[i]) continue;
       this.ground[i] = ground;
       this.structure[i] = code;
+      this.camp[i] = camp;
       changed.push({ x, y });
     }
     this.notify(changed);
     return changed;
   }
 
-  /** Entfernt Weg und Bau auf den Feldern (danach Wiese). */
+  /** Entfernt Weg, Bau und Zeltflächen-Markierung auf den Feldern (danach Wiese). Belegung bleibt. */
   clear(cells: readonly Cell[]): Cell[] {
-    return this.apply(cells.map(({ x, y }) => ({ x, y, path: false, structure: 'none' })));
+    return this.apply(cells.map(({ x, y }) => ({ x, y, path: false, structure: 'none', camp: false })));
   }
 
   /** Setzt (on = true) oder entfernt Wege; liefert nur die wirklich geänderten Felder. */

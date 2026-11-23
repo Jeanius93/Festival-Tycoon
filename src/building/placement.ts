@@ -65,7 +65,7 @@ export function isDelivered(grid: Grid, b: Building): boolean {
 /** Die eine Bauregel für Gebäude, die Vorschau und Bauen gemeinsam nutzen. */
 export function placementVerdict(grid: Grid, r: Rect, price: number, balance: number): PlacementVerdict {
   const free = rectCells(r).every(
-    ({ x, y }) => grid.inBounds(x, y) && !grid.isPath(x, y) && grid.structureAt(x, y) === 'none' && !grid.buildingAt(x, y),
+    ({ x, y }) => grid.inBounds(x, y) && !grid.isPath(x, y) && grid.structureAt(x, y) === 'none' && !grid.buildingAt(x, y) && !grid.isOccupied(x, y),
   );
   if (!free) return 'blocked';
   return price > balance ? 'tooExpensive' : 'ok';

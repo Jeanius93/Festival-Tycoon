@@ -130,3 +130,28 @@ describe('Regeln – Gebäude', () => {
     for (const kind of ['path', 'fence', 'visitorGate', 'staffGate'] as const) expect(verdict(g, kind, 3, 5)).toBe('blocked');
   });
 });
+
+describe('Regeln – Zeltfläche', () => {
+  it('Zeltfläche: auf Wiese und Weg ja, auf Zaun/Durchgang/Gebäude nein', () => {
+    const g = new Grid(10, 10);
+    g.apply([{ x: 1, y: 1, path: true }, { x: 2, y: 1, structure: 'fence' }]);
+    g.addBuilding({ type: 'toilet', x: 3, y: 1, width: 1, height: 1, facing: 'N', paidPrice: 150 });
+    expect(verdict(g, 'camp', 0, 1)).toBe('build');
+    expect(verdict(g, 'camp', 1, 1)).toBe('build');
+    expect(verdict(g, 'camp', 2, 1)).toBe('blocked');
+    expect(verdict(g, 'camp', 3, 1)).toBe('blocked');
+    g.apply([{ x: 0, y: 1, camp: true }]);
+    expect(verdict(g, 'camp', 0, 1)).toBe('skip');
+    expect(changeFor(g, 'camp', 4, 4)).toEqual({ x: 4, y: 4, camp: true });
+  });
+  it('Zaun und Durchgänge nicht auf Zeltfläche; nichts auf belegten Feldern', () => {
+    const g = new Grid(10, 10);
+    g.apply([{ x: 5, y: 5, camp: true }, { x: 4, y: 5, structure: 'fence' }, { x: 6, y: 5, structure: 'fence' }]);
+    expect(verdict(g, 'fence', 5, 5)).toBe('blocked');
+    expect(verdict(g, 'visitorGate', 5, 5)).toBe('blocked');
+    expect(verdict(g, 'staffGate', 5, 5)).toBe('blocked');
+    expect(verdict(g, 'path', 5, 5)).toBe('build');
+    g.setOccupied([{ x: 5, y: 5 }], true);
+    for (const k of ['path', 'fence', 'visitorGate', 'staffGate', 'camp'] as const) expect(verdict(g, k, 5, 5)).toBe('blocked');
+  });
+});

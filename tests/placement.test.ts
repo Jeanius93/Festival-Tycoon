@@ -66,3 +66,13 @@ describe('placementVerdict', () => {
     }
   });
 });
+
+describe('Platzierung – Zeltfläche', () => {
+  it('placementVerdict: belegtes Feld ist blocked, Zeltfläche allein nicht', () => {
+    const g = new Grid(10, 10);
+    g.apply([{ x: 5, y: 5, camp: true }]);
+    expect(placementVerdict(g, { x: 5, y: 5, width: 1, height: 1 }, 150, 1000)).toBe('ok');
+    g.setOccupied([{ x: 5, y: 5 }], true);
+    expect(placementVerdict(g, { x: 5, y: 5, width: 1, height: 1 }, 150, 1000)).toBe('blocked');
+  });
+});

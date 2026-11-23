@@ -157,3 +157,25 @@ describe('Grid – Gebäude', () => {
     expect(g.buildingAt(2, 3)).not.toBeNull();
   });
 });
+
+describe('Grid – Zeltfläche und Belegung', () => {
+  it('Zeltfläche markieren, melden und mit clear entfernen', () => {
+    const g = new Grid(10, 10);
+    const l = vi.fn();
+    g.onChange(l);
+    expect(g.apply([{ x: 1, y: 1, camp: true }, { x: 1, y: 1, camp: true }])).toEqual([{ x: 1, y: 1 }]);
+    expect(g.isCamp(1, 1)).toBe(true);
+    expect(l).toHaveBeenCalledTimes(1);
+    g.clear([{ x: 1, y: 1 }]);
+    expect(g.isCamp(1, 1)).toBe(false);
+  });
+  it('setOccupied meldet nur Änderungen, clear lässt Belegung stehen', () => {
+    const g = new Grid(10, 10);
+    expect(g.setOccupied([{ x: 2, y: 2 }, { x: 3, y: 2 }], true)).toHaveLength(2);
+    expect(g.setOccupied([{ x: 2, y: 2 }], true)).toEqual([]);
+    g.clear([{ x: 2, y: 2 }]);
+    expect(g.isOccupied(2, 2)).toBe(true);
+    expect(g.setOccupied([{ x: 2, y: 2 }], false)).toEqual([{ x: 2, y: 2 }]);
+    expect(g.isOccupied(2, 2)).toBe(false);
+  });
+});
