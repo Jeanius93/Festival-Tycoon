@@ -108,3 +108,52 @@ describe('Grid – Bauten', () => {
     expect(g.gateOrientationAt(2, 1)).toBe('horizontal');
   });
 });
+
+describe('Grid – Gebäude', () => {
+  const beer = { type: 'beer', x: 2, y: 3, width: 3, height: 2, facing: 'N', paidPrice: 600 } as const;
+  it('addBuilding belegt die Grundfläche und vergibt Kennnummern', () => {
+    const g = new Grid(10, 10);
+    const a = g.addBuilding(beer);
+    expect(a.id).toBe(1);
+    expect(g.buildingAt(2, 3)).toBe(a);
+    expect(g.buildingAt(4, 4)).toBe(a);
+    expect(g.buildingAt(5, 3)).toBeNull();
+    expect(g.buildingAt(-1, 3)).toBeNull();
+    expect(g.addBuilding({ ...beer, x: 6 }).id).toBe(2);
+    expect(g.buildings().map((b) => b.id)).toEqual([1, 2]);
+  });
+  it('meldet die Grundfläche einmal', () => {
+    const g = new Grid(10, 10);
+    const l = vi.fn();
+    g.onChange(l);
+    g.addBuilding(beer);
+    expect(l).toHaveBeenCalledTimes(1);
+    expect(l.mock.calls[0][0]).toHaveLength(6);
+  });
+  it('wirft bei Überlappung oder außerhalb', () => {
+    const g = new Grid(10, 10);
+    g.addBuilding(beer);
+    expect(() => g.addBuilding({ ...beer, x: 4 })).toThrow();
+    expect(() => g.addBuilding({ ...beer, x: 8 })).toThrow();
+    expect(g.buildings()).toHaveLength(1);
+    expect(g.buildingAt(5, 3)).toBeNull();
+  });
+  it('removeBuilding gibt frei, Kennnummern werden nicht wiederverwendet', () => {
+    const g = new Grid(10, 10);
+    const a = g.addBuilding(beer);
+    const l = vi.fn();
+    g.onChange(l);
+    expect(g.removeBuilding(a.id)).toEqual(a);
+    expect(l).toHaveBeenCalledTimes(1);
+    expect(g.buildingAt(2, 3)).toBeNull();
+    expect(g.removeBuilding(a.id)).toBeNull();
+    expect(l).toHaveBeenCalledTimes(1);
+    expect(g.addBuilding(beer).id).toBe(2);
+  });
+  it('clear lässt Gebäude stehen', () => {
+    const g = new Grid(10, 10);
+    g.addBuilding(beer);
+    g.clear([{ x: 2, y: 3 }]);
+    expect(g.buildingAt(2, 3)).not.toBeNull();
+  });
+});

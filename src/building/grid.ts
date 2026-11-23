@@ -1,3 +1,5 @@
+import type { BuildingType } from './catalog';
+
 /** Ein Feld des Grundstücks (0 … Breite-1, 0 … Höhe-1). */
 export interface Cell {
   x: number;
@@ -9,6 +11,24 @@ export type Structure = 'none' | 'fence' | 'visitorGate' | 'staffGate';
 
 /** Lage eines Durchgangs: 'horizontal' = in einer waagrechten Zaunlinie (Zaun links und rechts). */
 export type Orientation = 'horizontal' | 'vertical';
+
+/** Richtung, in die die Rückseite (Lieferseite) eines Gebäudes zeigt: 'N' = oben. */
+export type Facing = 'N' | 'E' | 'S' | 'W';
+
+/**
+ * Ein Gebäude auf dem Grundstück. `x`/`y` = linke obere Ecke,
+ * `width`/`height` = Ausdehnung auf der Karte (schon gedreht).
+ */
+export interface Building {
+  readonly id: number;
+  readonly type: BuildingType;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly facing: Facing;
+  readonly paidPrice: number;
+}
 
 /** Änderung an einem Feld; nicht angegebene Angaben bleiben, wie sie sind. */
 export interface CellChange {
@@ -40,12 +60,15 @@ function encode(structure: Structure, orientation: Orientation | undefined): num
 
 /**
  * Das Grundstück als reines Datenmodell (ohne Grafik).
- * Pro Feld: Boden (Wiese/Weg) und Bau (nichts/Zaun/Schleuse/Tor).
+ * Pro Feld: Boden (Wiese/Weg), Bau (nichts/Zaun/Schleuse/Tor) und Gebäude (Kennnummer, 0 = keines).
  * Bauregeln prüft das Grid nicht, das macht rules.ts.
  */
 export class Grid {
   private readonly ground: Uint8Array;
   private readonly structure: Uint8Array;
+  private readonly buildingIds: Uint16Array;
+  private readonly buildingList = new Map<number, Building>();
+  private nextBuildingId = 1;
   private readonly listeners = new Set<(changed: Cell[]) => void>();
 
   constructor(
@@ -54,6 +77,7 @@ export class Grid {
   ) {
     this.ground = new Uint8Array(width * height);
     this.structure = new Uint8Array(width * height);
+    this.buildingIds = new Uint16Array(width * height);
   }
 
   inBounds(x: number, y: number): boolean {
@@ -83,6 +107,45 @@ export class Grid {
     return this.codeAt(x, y) !== S_NONE;
   }
 
+  /** Das Gebäude auf diesem Feld (außerhalb oder frei → null). */
+  buildingAt(x: number, y: number): Building | null {
+    if (!this.inBounds(x, y)) return null;
+    return this.buildingList.get(this.buildingIds[y * this.width + x]) ?? null;
+  }
+
+  /** Alle Gebäude, nach Kennnummer sortiert. */
+  buildings(): Building[] {
+    return [...this.buildingList.values()];
+  }
+
+  /**
+   * Stellt ein Gebäude hin und vergibt eine neue Kennnummer (nie wiederverwendet).
+   * Bauregeln prüft placement.ts vorher; hier ist ein belegtes oder äußeres Feld ein Programmierfehler.
+   */
+  addBuilding(b: Omit<Building, 'id'>): Building {
+    const cells = this.cellsOf(b);
+    for (const { x, y } of cells) {
+      if (!this.inBounds(x, y)) throw new Error(`Gebäude ragt aus dem Grundstück (${x}/${y})`);
+      if (this.buildingIds[y * this.width + x] !== 0) throw new Error(`Feld ${x}/${y} ist schon belegt`);
+    }
+    const building: Building = { ...b, id: this.nextBuildingId++ };
+    this.buildingList.set(building.id, building);
+    for (const { x, y } of cells) this.buildingIds[y * this.width + x] = building.id;
+    this.notify(cells);
+    return building;
+  }
+
+  /** Entfernt ein Gebäude und gibt seine Felder frei; unbekannte Kennnummer → null. */
+  removeBuilding(id: number): Building | null {
+    const building = this.buildingList.get(id);
+    if (!building) return null;
+    this.buildingList.delete(id);
+    const cells = this.cellsOf(building);
+    for (const { x, y } of cells) this.buildingIds[y * this.width + x] = 0;
+    this.notify(cells);
+    return building;
+  }
+
   /** Wendet Änderungen an; liefert nur die wirklich geänderten Felder und meldet sie einmal. */
   apply(changes: readonly CellChange[]): Cell[] {
     const changed: Cell[] = [];
@@ -97,9 +160,7 @@ export class Grid {
       this.structure[i] = code;
       changed.push({ x, y });
     }
-    if (changed.length > 0) {
-      for (const listener of this.listeners) listener(changed);
-    }
+    this.notify(changed);
     return changed;
   }
 
@@ -117,6 +178,17 @@ export class Grid {
   onChange(listener: (changed: Cell[]) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  private notify(changed: Cell[]): void {
+    if (changed.length === 0) return;
+    for (const listener of this.listeners) listener(changed);
+  }
+
+  private cellsOf(b: { x: number; y: number; width: number; height: number }): Cell[] {
+    const cells: Cell[] = [];
+    for (let y = b.y; y < b.y + b.height; y++) for (let x = b.x; x < b.x + b.width; x++) cells.push({ x, y });
+    return cells;
   }
 
   private codeAt(x: number, y: number): number {
