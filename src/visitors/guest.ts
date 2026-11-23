@@ -5,6 +5,7 @@ import type { Random } from '../core/random';
 import { FESTIVAL, TIME } from '../config';
 import type { FlowField } from './flowField';
 import { FOOD_TYPES } from './offers';
+import { GUEST_COLORS } from './palette';
 import { TUNING } from './tuning';
 
 /** Bedürfnisse eines Gastes (0 … 100). Schlaf regelt der Tagesablauf, nicht ein Wert. */
@@ -39,8 +40,6 @@ export interface Guest {
   state: GuestState;
 }
 
-/** Hemdfarben der Platzhalter-Figuren. */
-export const GUEST_COLORS = [0xe53935, 0x1e88e5, 0xfdd835, 0x8e24aa, 0x43a047, 0xfb8c00] as const;
 
 /** Reihenfolge bei gleich dringenden Bedürfnissen. */
 const PRIORITY: readonly NeedKind[] = ['toilet', 'thirst', 'hunger', 'music', 'souvenir'];

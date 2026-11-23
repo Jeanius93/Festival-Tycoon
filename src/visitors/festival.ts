@@ -9,6 +9,7 @@ import { arrivalRoute, exitRoute, stepCar, type Car, type RouteStep } from '../v
 import { stepGuest } from './behaviour';
 import { createGuest, fulfil, growNeeds, tickSatisfaction, type Guest } from './guest';
 import { Offers } from './offers';
+import { CAR_COLORS, TENT_COLORS } from './palette';
 import { TUNING } from './tuning';
 
 export type FestivalPhase = 'building' | 'running' | 'finished';
@@ -45,9 +46,6 @@ interface Group {
 /** Auto mit Merker, bei welchem Stand des Grundstücks zuletzt vergeblich neu geplant wurde. */
 type CarEntry = Car & { checkedVersion: number };
 
-/** Zeltfarben der Platzhalter. */
-const TENT_COLORS = [0xef5350, 0x42a5f5, 0xffca28, 0x66bb6a, 0xab47bc, 0xff7043] as const;
-const CAR_COLORS = [0xc62828, 0x1565c0, 0xf9a825, 0x2e7d32, 0x6a1b9a, 0xeceff1] as const;
 
 /**
  * Das Festival als reine Simulation ohne Grafik: Uhr, Anreise, Autos, Zelte, Gäste,

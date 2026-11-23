@@ -15,7 +15,9 @@ import { isDelivered } from '../building/placement';
 import { RoadNetwork } from '../building/roadNetwork';
 import { BuildTool } from '../building/buildTool';
 import { Cash } from '../economy/cash';
-import { fenceMask, pathMask } from '../building/autotile';
+import { campMask, fenceMask, pathMask } from '../building/autotile';
+import { Festival } from '../visitors/festival';
+import { VisitorView } from './visitorView';
 import { computeZoom } from '../core/zoom';
 import type { UIScene } from './UIScene';
 import {
@@ -28,11 +30,12 @@ import {
 } from '../core/camera';
 
 // Jede Ebene hat ihr eigenes Tileset; getrennte Nummernbereiche verhindern Verwechslungen.
-const GROUND_GID = 0; // 0 = Wiese, 1 = Rand
+const GROUND_GID = 0; // 0 = Wiese, 1 = Rand, 2 = Straße Hinspur, 3 = Straße Rückspur
 const PATH_GID = 10; // 10 … 25 = Wegstücke
 const PREVIEW_GID = 30; // 30 = Bauen, 31 = Abreißen, 32 = nicht erlaubt
 const FENCE_GID = 40; // 40 … 55 = Zaunstücke
 const GATE_GID = 60; // 60 Schleuse waagrecht, 61 senkrecht, 62 Tor waagrecht, 63 senkrecht
+const CAMP_GID = 70; // 70 … 85 = Zeltflächen-Stücke
 
 const MAP_WIDTH = FIELD.width + 2 * BORDER_TILES;
 const MAP_HEIGHT = FIELD.height + 2 * BORDER_TILES;
@@ -42,6 +45,7 @@ const WORLD_HEIGHT = MAP_HEIGHT * TILE_SIZE;
 // Zeichenreihenfolge (von unten nach oben)
 const DEPTH = {
   ground: 0,
+  camp: 0.5,
   paths: 1,
   structures: 2,
   buildings: 3,
@@ -66,6 +70,10 @@ export class WorldScene extends Phaser.Scene {
   private grid!: Grid;
   private tool!: BuildTool;
   private pathLayer!: Phaser.Tilemaps.TilemapLayer;
+  private campLayer!: Phaser.Tilemaps.TilemapLayer;
+  private festival!: Festival;
+  private visitorView!: VisitorView;
+  private readonly zoneWarnings = new Map<number, Phaser.GameObjects.Image>();
   private structureLayer!: Phaser.Tilemaps.TilemapLayer;
   private previewLayer!: Phaser.Tilemaps.TilemapLayer;
   private gridOverlay!: Phaser.GameObjects.TileSprite;
@@ -91,6 +99,8 @@ export class WorldScene extends Phaser.Scene {
     this.grid = new Grid(FIELD.width, FIELD.height);
     this.cash = new Cash(START_CASH);
     this.tool = new BuildTool(this.grid, this.cash);
+    this.festival = new Festival(this.grid);
+    this.zoneWarnings.clear();
     this.buildingImages.clear();
     this.warningIcons.clear();
     this.shownPreview = [];
@@ -100,17 +110,20 @@ export class WorldScene extends Phaser.Scene {
     this.createMap();
     this.setupCamera();
     this.setupInput();
-    this.scene.launch('UI', { tool: this.tool, cash: this.cash });
+    this.visitorView = new VisitorView(this);
+    this.scene.launch('UI', { tool: this.tool, cash: this.cash, festival: this.festival });
 
     const offGrid = this.grid.onChange((changed) => {
       this.redrawCells(changed);
       this.syncBuildings();
+      this.syncZoneWarnings();
     });
     const offTool = this.tool.onChange(() => this.redrawPreview());
     this.scale.on(Phaser.Scale.Events.RESIZE, this.applyCamera, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       offGrid();
       offTool();
+      this.visitorView.destroy();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.applyCamera, this);
       this.scene.stop('UI');
     });
@@ -148,6 +161,10 @@ export class WorldScene extends Phaser.Scene {
       this.applyCamera();
     }
 
+    // Festival weiterrechnen und Figuren zeichnen
+    this.festival.update(delta);
+    this.visitorView.sync(this.festival);
+
     // Feld unter der Maus an das Werkzeug melden (Vorschau läuft auch beim Scrollen mit).
     // Über der Werkzeugleiste bleibt das zuletzt sichtbare Feld stehen.
     if (!this.isOverUi(pointer.x, pointer.y)) {
@@ -168,19 +185,26 @@ export class WorldScene extends Phaser.Scene {
     const previewSet = map.addTilesetImage('preview', TEXTURE_KEYS.previewTiles, TILE_SIZE, TILE_SIZE, 0, 0, PREVIEW_GID);
     const fenceSet = map.addTilesetImage('fences', TEXTURE_KEYS.fenceTiles, TILE_SIZE, TILE_SIZE, 0, 0, FENCE_GID);
     const gateSet = map.addTilesetImage('gates', TEXTURE_KEYS.gateTiles, TILE_SIZE, TILE_SIZE, 0, 0, GATE_GID);
-    if (!groundSet || !pathSet || !previewSet || !fenceSet || !gateSet) {
+    const campSet = map.addTilesetImage('camp', TEXTURE_KEYS.campTiles, TILE_SIZE, TILE_SIZE, 0, 0, CAMP_GID);
+    if (!groundSet || !pathSet || !previewSet || !fenceSet || !gateSet || !campSet) {
       throw new Error('Tilesets konnten nicht erzeugt werden');
     }
 
     const ground = map.createBlankLayer('ground', groundSet);
+    const camp = map.createBlankLayer('camp', campSet);
     const paths = map.createBlankLayer('paths', pathSet);
     const structures = map.createBlankLayer('structures', [fenceSet, gateSet]);
-    if (!ground || !paths || !structures) throw new Error('Kartenebenen konnten nicht erzeugt werden');
+    if (!ground || !camp || !paths || !structures) throw new Error('Kartenebenen konnten nicht erzeugt werden');
     ground.setDepth(DEPTH.ground);
+    camp.setDepth(DEPTH.camp);
+    this.campLayer = camp;
     paths.setDepth(DEPTH.paths);
     structures.setDepth(DEPTH.structures);
     ground.fill(GROUND_GID + 1, 0, 0, MAP_WIDTH, MAP_HEIGHT);
     ground.fill(GROUND_GID, BORDER_TILES, BORDER_TILES, FIELD.width, FIELD.height);
+    // Zufahrtsstraße direkt unter dem Grundstück, über die ganze Kartenbreite
+    ground.fill(GROUND_GID + 2, 0, BORDER_TILES + FIELD.height, MAP_WIDTH, 1);
+    ground.fill(GROUND_GID + 3, 0, BORDER_TILES + FIELD.height + 1, MAP_WIDTH, 1);
     this.pathLayer = paths;
     this.structureLayer = structures;
 
@@ -232,6 +256,13 @@ export class WorldScene extends Phaser.Scene {
     keyboard.on('keydown-DELETE', () => this.tool.toggleDemolish());
     keyboard.on('keydown-ESC', () => this.tool.setMode('view'));
     keyboard.on('keydown-G', () => this.gridOverlay.setVisible(!this.gridOverlay.visible));
+    // Spieluhr: Leertaste = Pause, 1/2/3 = Tempo (nur während des Festivals)
+    keyboard.addCapture('SPACE');
+    const running = () => this.festival.phase === 'running';
+    keyboard.on('keydown-SPACE', () => running() && this.festival.clock.togglePause());
+    keyboard.on('keydown-ONE', () => running() && this.festival.clock.setSpeed(1));
+    keyboard.on('keydown-TWO', () => running() && this.festival.clock.setSpeed(2));
+    keyboard.on('keydown-THREE', () => running() && this.festival.clock.setSpeed(3));
 
     input.on(Phaser.Input.Events.GAME_OUT, () => (this.pointerInside = false));
     input.on(Phaser.Input.Events.GAME_OVER, () => (this.pointerInside = true));
@@ -304,6 +335,8 @@ export class WorldScene extends Phaser.Scene {
         if (!this.grid.inBounds(x, y)) continue;
         const tx = x + BORDER_TILES;
         const ty = y + BORDER_TILES;
+        if (this.grid.isCamp(x, y)) this.campLayer.putTileAt(CAMP_GID + campMask(this.grid, x, y), tx, ty);
+        else this.campLayer.removeTileAt(tx, ty);
         if (this.grid.isPath(x, y)) {
           this.pathLayer.putTileAt(PATH_GID + pathMask(this.grid, x, y), tx, ty);
         } else {
@@ -336,6 +369,28 @@ export class WorldScene extends Phaser.Scene {
     for (const b of current.values()) {
       if (!this.buildingImages.has(b.id)) this.createBuildingImage(b);
       this.warningIcons.get(b.id)?.setVisible(!isDelivered(this.grid, b, roads));
+    }
+  }
+
+  /** Warnschild auf jeder Zeltfläche ohne Wegverbindung zur Straße (auf ihrem ersten Feld). */
+  private syncZoneWarnings(): void {
+    const missing = new Map(
+      this.festival
+        .zones()
+        .filter((z) => !z.access)
+        .map((z) => [z.id, z.cells[0]] as const),
+    );
+    for (const [id, image] of this.zoneWarnings) {
+      if (missing.has(id)) continue;
+      image.destroy();
+      this.zoneWarnings.delete(id);
+    }
+    for (const [id, cell] of missing) {
+      if (this.zoneWarnings.has(id)) continue;
+      const image = this.add
+        .image((cell.x + BORDER_TILES + 0.5) * TILE_SIZE, (cell.y + BORDER_TILES + 0.5) * TILE_SIZE, TEXTURE_KEYS.deliveryWarning)
+        .setDepth(DEPTH.warnings);
+      this.zoneWarnings.set(id, image);
     }
   }
 
