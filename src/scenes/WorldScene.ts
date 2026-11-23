@@ -11,7 +11,7 @@ import {
 import { TEXTURE_KEYS } from '../assets/placeholders';
 import { Grid, type Cell } from '../building/grid';
 import { BuildTool } from '../building/buildTool';
-import { pathMask } from '../building/autotile';
+import { fenceMask, pathMask } from '../building/autotile';
 import { computeZoom } from '../core/zoom';
 import type { UIScene } from './UIScene';
 import {
@@ -26,7 +26,9 @@ import {
 // Jede Ebene hat ihr eigenes Tileset; getrennte Nummernbereiche verhindern Verwechslungen.
 const GROUND_GID = 0; // 0 = Wiese, 1 = Rand
 const PATH_GID = 10; // 10 … 25 = Wegstücke
-const PREVIEW_GID = 30; // 30 = Bauen, 31 = Abreißen
+const PREVIEW_GID = 30; // 30 = Bauen, 31 = Abreißen, 32 = nicht erlaubt
+const FENCE_GID = 40; // 40 … 55 = Zaunstücke
+const GATE_GID = 60; // 60 Schleuse waagrecht, 61 senkrecht, 62 Tor waagrecht, 63 senkrecht
 
 const MAP_WIDTH = FIELD.width + 2 * BORDER_TILES;
 const MAP_HEIGHT = FIELD.height + 2 * BORDER_TILES;
@@ -46,6 +48,7 @@ export class WorldScene extends Phaser.Scene {
   private grid!: Grid;
   private tool!: BuildTool;
   private pathLayer!: Phaser.Tilemaps.TilemapLayer;
+  private structureLayer!: Phaser.Tilemaps.TilemapLayer;
   private previewLayer!: Phaser.Tilemaps.TilemapLayer;
   private gridOverlay!: Phaser.GameObjects.TileSprite;
   private shownPreview: Cell[] = [];
@@ -74,7 +77,7 @@ export class WorldScene extends Phaser.Scene {
     this.setupInput();
     this.scene.launch('UI', { tool: this.tool });
 
-    const offGrid = this.grid.onChange((changed) => this.redrawPaths(changed));
+    const offGrid = this.grid.onChange((changed) => this.redrawCells(changed));
     const offTool = this.tool.onChange(() => this.redrawPreview());
     this.scale.on(Phaser.Scale.Events.RESIZE, this.applyCamera, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -135,14 +138,20 @@ export class WorldScene extends Phaser.Scene {
     const groundSet = map.addTilesetImage('ground', TEXTURE_KEYS.groundTiles, TILE_SIZE, TILE_SIZE, 0, 0, GROUND_GID);
     const pathSet = map.addTilesetImage('paths', TEXTURE_KEYS.pathTiles, TILE_SIZE, TILE_SIZE, 0, 0, PATH_GID);
     const previewSet = map.addTilesetImage('preview', TEXTURE_KEYS.previewTiles, TILE_SIZE, TILE_SIZE, 0, 0, PREVIEW_GID);
-    if (!groundSet || !pathSet || !previewSet) throw new Error('Tilesets konnten nicht erzeugt werden');
+    const fenceSet = map.addTilesetImage('fences', TEXTURE_KEYS.fenceTiles, TILE_SIZE, TILE_SIZE, 0, 0, FENCE_GID);
+    const gateSet = map.addTilesetImage('gates', TEXTURE_KEYS.gateTiles, TILE_SIZE, TILE_SIZE, 0, 0, GATE_GID);
+    if (!groundSet || !pathSet || !previewSet || !fenceSet || !gateSet) {
+      throw new Error('Tilesets konnten nicht erzeugt werden');
+    }
 
     const ground = map.createBlankLayer('ground', groundSet);
     const paths = map.createBlankLayer('paths', pathSet);
-    if (!ground || !paths) throw new Error('Kartenebenen konnten nicht erzeugt werden');
+    const structures = map.createBlankLayer('structures', [fenceSet, gateSet]);
+    if (!ground || !paths || !structures) throw new Error('Kartenebenen konnten nicht erzeugt werden');
     ground.fill(GROUND_GID + 1, 0, 0, MAP_WIDTH, MAP_HEIGHT);
     ground.fill(GROUND_GID, BORDER_TILES, BORDER_TILES, FIELD.width, FIELD.height);
     this.pathLayer = paths;
+    this.structureLayer = structures;
 
     this.gridOverlay = this.add
       .tileSprite(
@@ -251,17 +260,28 @@ export class WorldScene extends Phaser.Scene {
     return ui !== null && this.scene.isActive('UI') && ui.containsPoint(x, y);
   }
 
-  /** Zeichnet geänderte Wegfelder und ihre Nachbarn neu (Wegstücke verbinden sich). */
-  private redrawPaths(changed: Cell[]): void {
+  /** Zeichnet geänderte Felder und ihre Nachbarn neu (Weg- und Zaunstücke verbinden sich). */
+  private redrawCells(changed: Cell[]): void {
     for (const cell of changed) {
       for (const [ox, oy] of NEIGHBOURS) {
         const x = cell.x + ox;
         const y = cell.y + oy;
         if (!this.grid.inBounds(x, y)) continue;
+        const tx = x + BORDER_TILES;
+        const ty = y + BORDER_TILES;
         if (this.grid.isPath(x, y)) {
-          this.pathLayer.putTileAt(PATH_GID + pathMask(this.grid, x, y), x + BORDER_TILES, y + BORDER_TILES);
+          this.pathLayer.putTileAt(PATH_GID + pathMask(this.grid, x, y), tx, ty);
         } else {
-          this.pathLayer.removeTileAt(x + BORDER_TILES, y + BORDER_TILES);
+          this.pathLayer.removeTileAt(tx, ty);
+        }
+        const structure = this.grid.structureAt(x, y);
+        if (structure === 'fence') {
+          this.structureLayer.putTileAt(FENCE_GID + fenceMask(this.grid, x, y), tx, ty);
+        } else if (structure === 'none') {
+          this.structureLayer.removeTileAt(tx, ty);
+        } else {
+          const vertical = this.grid.gateOrientationAt(x, y) === 'vertical' ? 1 : 0;
+          this.structureLayer.putTileAt(GATE_GID + (structure === 'staffGate' ? 2 : 0) + vertical, tx, ty);
         }
       }
     }
@@ -270,9 +290,10 @@ export class WorldScene extends Phaser.Scene {
   private redrawPreview(): void {
     for (const { x, y } of this.shownPreview) this.previewLayer.removeTileAt(x + BORDER_TILES, y + BORDER_TILES);
     const preview = this.tool.preview;
-    this.shownPreview = preview ? preview.cells : [];
+    this.shownPreview = preview ? [...preview.cells, ...preview.blocked] : [];
     if (!preview) return;
     const index = PREVIEW_GID + (preview.kind === 'build' ? 0 : 1);
     for (const { x, y } of preview.cells) this.previewLayer.putTileAt(index, x + BORDER_TILES, y + BORDER_TILES);
+    for (const { x, y } of preview.blocked) this.previewLayer.putTileAt(PREVIEW_GID + 2, x + BORDER_TILES, y + BORDER_TILES);
   }
 }

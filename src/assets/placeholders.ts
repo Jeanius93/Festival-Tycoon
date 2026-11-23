@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS, TILE_SIZE } from '../config';
 import { DIR } from '../building/autotile';
+import { fenceRects } from './fenceShape';
 
 export const TEXTURE_KEYS = {
   grass: 'grass',
@@ -8,8 +9,12 @@ export const TEXTURE_KEYS = {
   groundTiles: 'groundTiles',
   /** 16 Kacheln: Wegstück für jede Kombination verbundener Nachbarn (siehe DIR) */
   pathTiles: 'pathTiles',
-  /** 2 Kacheln: 0 = Bau-Vorschau, 1 = Abriss-Vorschau */
+  /** 3 Kacheln: 0 = Bau-Vorschau, 1 = Abriss-Vorschau, 2 = nicht erlaubt */
   previewTiles: 'previewTiles',
+  /** 16 Kacheln: Zaunstück für jede Kombination verbundener Nachbarn (siehe DIR) */
+  fenceTiles: 'fenceTiles',
+  /** 4 Kacheln: 0 Schleuse waagrecht, 1 Schleuse senkrecht, 2 Tor waagrecht, 3 Tor senkrecht */
+  gateTiles: 'gateTiles',
   /** Eine Rasterzelle (Linie oben und links), wird gekachelt */
   gridCell: 'gridCell',
 } as const;
@@ -93,6 +98,49 @@ function drawPath(g: Phaser.GameObjects.Graphics, ox: number, mask: number): voi
   for (const [x, y] of PEBBLES) g.fillRect(ox + x, y, 1, 1);
 }
 
+/** Zaunstück: Pfosten in der Mitte plus zwei Latten zu jedem verbundenen Nachbarn. */
+function drawFence(g: Phaser.GameObjects.Graphics, ox: number, mask: number): void {
+  const { rails, shadows } = fenceRects(mask);
+  g.fillStyle(COLORS.fenceShade);
+  for (const [x, y, w, h] of shadows) g.fillRect(ox + x, y, w, h);
+  g.fillStyle(COLORS.fenceRail);
+  for (const [x, y, w, h] of rails) g.fillRect(ox + x, y, w, h);
+  g.fillStyle(COLORS.fenceShade);
+  g.fillRect(ox + 6, 6, 5, 5);
+  g.fillStyle(COLORS.fencePost);
+  g.fillRect(ox + 6, 6, 4, 4);
+}
+
+/**
+ * Durchgang (Schleuse oder Tor) in einer waagrechten Zaunlinie; senkrecht = gespiegelt an der Diagonale.
+ * Die Mitte bleibt frei, damit ein Weg unter einem Tor sichtbar bleibt.
+ */
+function drawGate(g: Phaser.GameObjects.Graphics, ox: number, staff: boolean, vertical: boolean): void {
+  const rect = (x: number, y: number, w: number, h: number, color: number): void => {
+    g.fillStyle(color);
+    if (vertical) g.fillRect(ox + y, x, h, w);
+    else g.fillRect(ox + x, y, w, h);
+  };
+  // Zaun-Anschluss und Torpfosten an beiden Enden
+  for (const x0 of [0, 13]) {
+    rect(x0, 6, 3, 1, COLORS.fenceRail);
+    rect(x0, 9, 3, 1, COLORS.fenceRail);
+  }
+  rect(2, 5, 3, 6, COLORS.fenceShade);
+  rect(2, 5, 2, 5, COLORS.fencePost);
+  rect(12, 5, 3, 6, COLORS.fenceShade);
+  rect(12, 5, 2, 5, COLORS.fencePost);
+  if (staff) {
+    // Schlagbaum rot-weiß
+    for (let x = 4; x < 12; x += 2) rect(x, 7, 2, 2, (x / 2) % 2 === 0 ? COLORS.gateBarrierRed : COLORS.gateBarrierWhite);
+  } else {
+    // Drehkreuz: gelber Mittelpfosten mit Armen
+    rect(7, 6, 2, 4, COLORS.gateTurnstile);
+    rect(5, 7, 6, 1, COLORS.gateTurnstile);
+    rect(7, 6, 1, 1, COLORS.fenceShade);
+  }
+}
+
 function drawPreview(g: Phaser.GameObjects.Graphics, ox: number, color: number): void {
   g.fillStyle(color);
   g.fillRect(ox, 0, T, T);
@@ -120,9 +168,19 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   makeStrip(scene, TEXTURE_KEYS.grass, 1, (g, ox) => drawGrass(g, ox));
   makeStrip(scene, TEXTURE_KEYS.groundTiles, 2, (g, ox, i) => (i === 0 ? drawGrass(g, ox) : drawBorder(g, ox)));
   makeStrip(scene, TEXTURE_KEYS.pathTiles, 16, (g, ox, mask) => drawPath(g, ox, mask));
-  makeStrip(scene, TEXTURE_KEYS.previewTiles, 2, (g, ox, i) =>
-    drawPreview(g, ox, i === 0 ? COLORS.previewBuild : COLORS.previewDemolish),
-  );
+  makeStrip(scene, TEXTURE_KEYS.previewTiles, 3, (g, ox, i) => {
+    drawPreview(g, ox, i === 0 ? COLORS.previewBuild : COLORS.previewDemolish);
+    if (i === 2) {
+      // „Nicht erlaubt“: rotes Feld mit weißem Kreuz
+      g.fillStyle(0xffffff);
+      for (let d = 3; d < T - 3; d++) {
+        g.fillRect(ox + d, d, 2, 1);
+        g.fillRect(ox + T - 2 - d, d, 2, 1);
+      }
+    }
+  });
+  makeStrip(scene, TEXTURE_KEYS.fenceTiles, 16, (g, ox, mask) => drawFence(g, ox, mask));
+  makeStrip(scene, TEXTURE_KEYS.gateTiles, 4, (g, ox, i) => drawGate(g, ox, i >= 2, i % 2 === 1));
 
   const grid = scene.make.graphics({ x: 0, y: 0 }, false);
   grid.fillStyle(COLORS.grid, 0.22);

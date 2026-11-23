@@ -1,12 +1,18 @@
 import type { Cell, Grid } from './grid';
 import { lCells } from './lineTool';
+import { changeFor, verdict, type BuildKind } from './rules';
 
-/** Werkzeuge: nur schauen, Weg bauen, Weg abreißen. */
-export type ToolMode = 'view' | 'path' | 'demolish';
+/** Werkzeuge: nur schauen, Weg, Zaun, Besucher-Schleuse, Personal-Tor, abreißen. */
+export type ToolMode = 'view' | 'path' | 'fence' | 'visitorGate' | 'staffGate' | 'demolish';
 
-/** Was die Vorschau gerade zeigen soll. */
+/**
+ * Was die Vorschau gerade zeigen soll. Bei 'build' stehen in `cells` die Felder,
+ * die gebaut werden oder schon fertig sind (hell), in `blocked` die nicht erlaubten (rot).
+ * Bei 'demolish' stehen alle Felder in `cells`, `blocked` ist leer.
+ */
 export interface Preview {
   cells: Cell[];
+  blocked: Cell[];
   kind: 'build' | 'demolish';
 }
 
@@ -73,7 +79,12 @@ export class BuildTool {
     if (!this.isDragging) return [];
     const cells = this.previewCells();
     this.dragStart = null;
-    const changed = this.grid.applyPath(cells, this.currentMode === 'path');
+    const kind = this.buildKind();
+    const changed = kind
+      ? this.grid.apply(
+          cells.filter((c) => verdict(this.grid, kind, c.x, c.y) === 'build').map((c) => changeFor(this.grid, kind, c.x, c.y)),
+        )
+      : this.grid.clear(cells);
     this.notify();
     return changed;
   }
@@ -90,7 +101,12 @@ export class BuildTool {
     if (this.currentMode === 'view') return null;
     const cells = this.previewCells();
     if (cells.length === 0) return null;
-    return { cells, kind: this.currentMode === 'path' ? 'build' : 'demolish' };
+    const kind = this.buildKind();
+    if (!kind) return { cells, blocked: [], kind: 'demolish' };
+    const allowed: Cell[] = [];
+    const blocked: Cell[] = [];
+    for (const c of cells) (verdict(this.grid, kind, c.x, c.y) === 'blocked' ? blocked : allowed).push(c);
+    return { cells: allowed, blocked, kind: 'build' };
   }
 
   onChange(listener: () => void): () => void {
@@ -100,8 +116,16 @@ export class BuildTool {
 
   private previewCells(): Cell[] {
     if (!this.hover) return [];
-    const cells = this.dragStart ? lCells(this.dragStart, this.hover, this.horizontalFirst) : [this.hover];
+    // Durchgänge betreffen immer nur das Feld unter der Maus, auch während gedrückter Taste.
+    const isGate = this.currentMode === 'visitorGate' || this.currentMode === 'staffGate';
+    const cells =
+      this.dragStart && !isGate ? lCells(this.dragStart, this.hover, this.horizontalFirst) : [this.hover];
     return cells.filter((c) => this.grid.inBounds(c.x, c.y));
+  }
+
+  /** Bauart des aktiven Werkzeugs; null beim Abreißen (und bei „Ansehen“). */
+  private buildKind(): BuildKind | null {
+    return this.currentMode === 'view' || this.currentMode === 'demolish' ? null : this.currentMode;
   }
 
   private notify(): void {
