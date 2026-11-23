@@ -88,14 +88,14 @@ export function growNeeds(g: Guest, second: number): void {
   }
 }
 
+/** Alle Bedürfnisse ab `seekAt`, dringendstes zuerst (Gleichstand: Reihenfolge von PRIORITY). */
+export function seekableNeeds(g: Guest): NeedKind[] {
+  return PRIORITY.filter((n) => g.needs[n] >= TUNING.seekAt).sort((a, b) => g.needs[b] - g.needs[a]);
+}
+
 /** Das dringendste Bedürfnis ab `seekAt`, sonst null. */
 export function urgentNeed(g: Guest): NeedKind | null {
-  let best: NeedKind | null = null;
-  for (const need of PRIORITY) {
-    if (g.needs[need] < TUNING.seekAt) continue;
-    if (best === null || g.needs[need] > g.needs[best]) best = need;
-  }
-  return best;
+  return seekableNeeds(g)[0] ?? null;
 }
 
 /** Welche Gebäudeart der Gast für dieses Bedürfnis ansteuert (nächste erreichbare, beim Essen mit Abwechslung). */

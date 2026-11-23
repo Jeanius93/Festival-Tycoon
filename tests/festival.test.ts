@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Grid } from '../src/building/grid';
 import { Festival } from '../src/visitors/festival';
-import { camp, runUntil } from './helpers/festivalScenes';
+import { camp, campMitKlos, runUntil } from './helpers/festivalScenes';
 
 describe('Festival-Ablauf', () => {
   it('ohne angeschlossene Zeltfläche kein Start', () => {
@@ -85,4 +85,46 @@ describe('Festival-Ablauf', () => {
     expect(b.clock.second).toBe(36000 + 1440 * 2);
     expect(b.cars().map((c) => [c.x, c.y])).toEqual(a.cars().map((c) => [c.x, c.y]));
   });
+});
+
+describe('Festival mit Gästen', () => {
+  it('ohne Klo sinkt die Zufriedenheit, mit Klos bleibt sie höher', () => {
+    const ohne = new Festival(camp(), 5);
+    const mit = new Festival(campMitKlos(), 5);
+    for (const f of [ohne, mit]) {
+      f.start();
+      runUntil(f, 20 * 3600); // Tag 1, 20:00 (ohne Bier, Essen und Bühne reisen später alle früh ab)
+    }
+    expect(mit.stats().satisfaction).toBeGreaterThan(ohne.stats().satisfaction);
+  });
+  it('sehr unzufriedene Gruppe reist früher ab', () => {
+    const f = new Festival(camp(), 2);
+    f.start();
+    runUntil(f, 2 * 86400 + 36000);
+    expect(f.stats().guests).toBeLessThan(8);
+    runUntil(f, 400000);
+    expect(f.summary!.leftEarly).toBeGreaterThan(0);
+  });
+  // Echtzeit-Bedarf: Tempo 3 rechnet 360 Ticks pro Sekunde, also braucht ein Viertel-Spieltag (10 800 Ticks)
+  // höchstens 30 s. Die Grenze von 10 s lässt also dreifachen Puffer, auch auf langsamen Rechnern.
+  it('300 Gäste: ein Viertel-Spieltag in unter 10 Sekunden', () => {
+    const g = new Grid(64, 48);
+    g.applyPath(Array.from({ length: 48 }, (_, y) => ({ x: 32, y })), true);
+    const camp = [];
+    for (let y = 1; y <= 20; y++) for (let x = 33; x <= 62; x++) camp.push({ x, y, camp: true });
+    g.apply(camp);
+    const stalls = ['beer', 'fries', 'bratwurst', 'pizza', 'merch'] as const;
+    stalls.forEach((type, i) => {
+      for (const k of [0, 1]) g.addBuilding({ type, x: 30, y: (i * 2 + k) * 4, width: 2, height: 3, facing: 'E', paidPrice: 0 });
+    });
+    for (const y of [40, 42]) g.addBuilding({ type: 'toilet', x: 31, y, width: 1, height: 1, facing: 'E', paidPrice: 0 });
+    g.addBuilding({ type: 'stage', x: 12, y: 38, width: 4, height: 6, facing: 'E', paidPrice: 0 });
+    g.applyPath(Array.from({ length: 10 }, (_, i) => ({ x: 16, y: 38 + i })), true);
+    const f = new Festival(g, 9);
+    const t0 = performance.now();
+    f.start();
+    runUntil(f, 36000 + 86400 / 4);
+    expect(performance.now() - t0).toBeLessThan(10000);
+    expect(f.stats().guests).toBeGreaterThan(250);
+  }, 30000);
 });

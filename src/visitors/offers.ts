@@ -3,7 +3,7 @@ import type { Building, Cell, Facing, Grid } from '../building/grid';
 import { backCells, isDelivered } from '../building/placement';
 import type { RoadNetwork } from '../building/roadNetwork';
 import { isStageTime } from '../core/clock';
-import { FlowField, isWalkable, type Goal } from './flowField';
+import { FlowField, isWalkable, walkMask, type Goal } from './flowField';
 import { TUNING } from './tuning';
 
 /** Essensstände (Abwechslung zählt). */
@@ -56,6 +56,8 @@ export class Offers {
   private readonly progress = new Map<number, number>();
   private readonly services = new Map<number, Building>();
   private dissolved: number[] = [];
+  private maskKey = '';
+  private readonly goalKeys = new Map<BuildingType, string>();
 
   constructor(private readonly grid: Grid) {
     const empty = FlowField.build(grid, []);
@@ -93,11 +95,29 @@ export class Offers {
       if (waiting >= TUNING.maxQueue) continue;
       list.push({ ...serviceCell(b), cost: waiting * TUNING.queueCostPerGuest });
     }
-    for (const type of BUILDING_TYPES) this.fields.set(type, FlowField.build(this.grid, goals.get(type) ?? []));
+    // Karten nur neu bauen, wenn sich Begehbarkeit oder Ziele (inkl. Schlangen-Zuschlag) geändert haben.
+    const mask = walkMask(this.grid);
+    const maskKey = mask.join('');
+    if (maskKey !== this.maskKey) {
+      this.maskKey = maskKey;
+      this.goalKeys.clear();
+    }
+    for (const type of BUILDING_TYPES) {
+      const list = goals.get(type) ?? [];
+      const key = list.map((g) => `${g.x},${g.y},${g.cost}`).join(';');
+      if (this.goalKeys.get(type) === key) continue;
+      this.goalKeys.set(type, key);
+      this.fields.set(type, FlowField.build(this.grid, list, mask));
+    }
   }
 
   field(type: BuildingType): FlowField {
     return this.fields.get(type)!;
+  }
+
+  /** Offenes Gebäude mit dieser Kennnummer (sonst null). */
+  building(id: number): Building | null {
+    return this.open.get(id) ?? null;
   }
 
   isOpen(id: number): boolean {

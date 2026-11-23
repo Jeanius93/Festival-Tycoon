@@ -7,7 +7,7 @@ import { GameClock } from '../core/clock';
 import { Random } from '../core/random';
 import { arrivalRoute, exitRoute, stepCar, type Car, type RouteStep } from '../vehicles/car';
 import { stepGuest } from './behaviour';
-import { createGuest, type Guest } from './guest';
+import { createGuest, fulfil, growNeeds, tickSatisfaction, type Guest } from './guest';
 import { Offers } from './offers';
 import { TUNING } from './tuning';
 
@@ -157,10 +157,20 @@ export class Festival {
     if (this.fieldsDirty || this.tickCount % TUNING.fieldRefreshTicks === 0) {
       this.offers.refresh(this.roads, second);
       this.fieldsDirty = false;
+      for (const id of this.offers.takeDissolved()) {
+        const g = this.guestMap.get(id);
+        if (g?.state.kind === 'queue') g.state = { kind: 'wander', path: [], waitTicks: 0 };
+      }
     }
 
     this.moveCars();
     this.moveGuests(second);
+    for (const s of this.offers.serve()) {
+      const g = this.guestMap.get(s.guestId);
+      if (!g) continue;
+      fulfil(g, s.type);
+      g.state = { kind: 'wander', path: [], waitTicks: 0 };
+    }
     this.packUp();
 
     if (this.departureStarted && this.groups.size === 0) this.finish();
@@ -320,6 +330,7 @@ export class Festival {
     for (const g of this.guestMap.values()) {
       const group = this.groups.get(g.groupId);
       if (!group) continue;
+      growNeeds(g, second);
       stepGuest(g, {
         grid: this.grid,
         offers: this.offers,
@@ -328,6 +339,17 @@ export class Festival {
         door: tentDoor(group.plot),
         leaving: group.leaving,
       });
+      // Im Zelt (Schlaf, eingepackt) ändert sich die Laune nicht.
+      if (g.state.kind === 'inTent') continue;
+      const mood = tickSatisfaction(g, {
+        second,
+        queueing: g.state.kind === 'queue',
+        watchingMusic: g.state.kind === 'watch',
+      });
+      if (mood === 'leave' && !group.leaving) {
+        group.leaving = true;
+        group.early = true;
+      }
     }
   }
 
