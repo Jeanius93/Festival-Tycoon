@@ -28,6 +28,7 @@
   2. Design-Dokument (`docs/superpowers/specs/`), vom Nutzer freigeben lassen
   3. `writing-plans` (Umsetzungsplan, vom Nutzer freigeben lassen)
   4. Umsetzung
+- **Umsetzung immer „selbst“ (Native):** Claude arbeitet alle Plan-Schritte in der Sitzung selbst ab (Skill `executing-plans`), am Ende prüft ein unabhängiger Helfer den ganzen Branch. Nicht jedes Mal neu fragen (vom Nutzer festgelegt).
 - Kein Spielcode, bevor Design und Plan freigegeben sind.
 
 ## Technik
