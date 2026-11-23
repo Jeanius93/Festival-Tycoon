@@ -2,7 +2,7 @@
 
 **Datum:** 2026-11-23
 **Meilenstein:** M3 (siehe `GAME_DESIGN.md`, Abschnitt 11)
-**Status:** Entwurf, wartet auf Freigabe durch den Nutzer
+**Status:** Vom Nutzer freigegeben (2026-11-23)
 
 ---
 
@@ -58,6 +58,7 @@ In M3 läuft noch niemand herum. Die Stände stehen nur da. Ab M4 suchen Besuche
 - **Gebäude anklicken für Infos**, Gebäude verschieben, mehrere Gebäude auf einmal ziehen.
 - **Freier Platz vor der Theke** wird nicht erzwungen (das klärt sich mit den Warteschlangen in M4).
 - **Weitere Gebäude** (Getränkestand, Duschen, Zeltplatz, Künstlerzelt …) – leicht über den Katalog nachrüstbar.
+- **Neue Gebäude und Freischaltungen über die Jahre** (z. B. „ab Stufe 2“): kommen mit M7 „Ruf und Wachstum“. Dann bekommt jeder Katalog-Eintrag eine Angabe, ab welcher Stufe er verfügbar ist. In M3 sind alle Gebäude von Anfang an verfügbar (vom Nutzer bestätigt).
 - **Speichern/Laden** (M9), **echte Grafiken** (M10).
 
 ## 4. Anti-Ziele (das wäre ein Fehlschlag, selbst wenn es technisch läuft)

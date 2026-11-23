@@ -31,6 +31,7 @@ Ein gemütliches **Tycoon-Spiel**, in dem man ein **Rockfestival** organisiert, 
 
 - Besucher laufen **frei über die Wiese**, wie auf einem echten Festival.
 - **Wege sind Versorgungsadern:** Über sie kommen Lieferungen (Bier, Essen) zu den Ständen, Technik zur Bühne und Künstler in den Backstage-Bereich. Ein Stand ohne Wegverbindung wird schlecht oder gar nicht beliefert.
+- **Lieferseite:** Jedes Gebäude hat eine Vorderseite für die Gäste und eine Rückseite für die Lieferung. Beliefert wird über einen Weg, der an der Rückseite anliegt. Ohne Lieferweg darf gebaut werden, das Gebäude zeigt aber eine Warnung. Deshalb lassen sich Gebäude drehen.
 - Bei Regen wird die Wiese matschig, Wege bleiben gut befahrbar.
 
 ### 1.3 Zäune und Durchgänge
@@ -39,6 +40,12 @@ Ein gemütliches **Tycoon-Spiel**, in dem man ein **Rockfestival** organisiert, 
 - **Besucher-Schleuse:** Gäste und Personal gehen zu Fuß hindurch. Kein Weg, keine Fahrzeuge.
 - **Personal-Tor:** Nur Personal und Lieferwagen kommen hindurch. Ein Weg darf hindurchführen; nur so führt ein Weg durch einen Zaun.
 - Später denkbar: breitere Einlässe, VIP-Zugang, verschiedene Zaunarten.
+
+### 1.4 Bau-Menü
+
+- Alles Baubare liegt in einem Menü mit Kategorien, z. B. **Wege & Zäune, Bühnen, Stände, Sanitär**. Ein Klick auf eine Kategorie zeigt ihre Einträge mit Preis.
+- Es gibt viele verschiedene Stände: Bier, mehrere Essenssorten, Merch und weitere.
+- Alle Gebäude stehen in einem **Katalog** (Name, Größe, Preis, Kategorie). Neue Gebäude kommen über neue Katalog-Einträge dazu; welche ab welcher Wachstumsstufe verfügbar sind, regelt M7.
 
 ---
 
@@ -94,7 +101,7 @@ Ziel: Nach jedem Merge in den Hauptzweig (`main`) ist das Spiel automatisch unte
 | Mausrad | Zoomen |
 | Mittlere Maustaste + Ziehen oder Bildschirmrand | Kamera verschieben |
 | WASD / Pfeiltasten | Kamera verschieben (Alternative) |
-| R | Objekt drehen |
+| R | Gebäude drehen (beim Ziehen von Wegen und Zäunen: Ecke drehen) |
 | Entf | Abreißen-Modus |
 | Leertaste | Pause |
 | 1 / 2 / 3 | Spielgeschwindigkeit |
@@ -142,7 +149,7 @@ Jeder Besucher ist eine kleine Pixel-Figur mit eigenen Werten:
 | Bedürfnis | Wird erfüllt durch |
 |---|---|
 | Durst | Bierstand, Getränkestand, Wasserstelle |
-| Hunger | Food-Stände, Food-Trucks |
+| Hunger | Food-Stände, Food-Trucks (verschiedene Essenssorten heben die Zufriedenheit: Abwechslung zählt) |
 | Klo | Dixi-Klos, Toilettenwagen |
 | Musik / Unterhaltung | Bühnen mit Bands |
 | Schlaf | Zeltplatz |
@@ -206,7 +213,7 @@ Jeder Meilenstein wird einzeln umgesetzt: Brainstorming → Design → Plan → 
 | **M0** | Projekt-Grundgerüst: Phaser 3 + TypeScript + Vite, leere Szene, GitHub-Actions-Deployment auf GitHub Pages, erfolgreich online erreichbar |
 | **M1** | Wiese mit Raster, Kamera verschieben und zoomen, Wege per Klick und Ziehen bauen und abreißen |
 | **M2** | Geländebereiche: Zäune, Besucher-Schleusen und Personal-Tore (Bühnengelände und Backstage einzäunen, Campingplatz ist die offene Wiese) |
-| **M3** | Objekte platzieren: Bühne, Bierstand, Klo (mit Vorschau, Drehen, Budget und Kosten) |
+| **M3** | Objekte platzieren: Bau-Menü, Bühne, Bier-, Essens- und Merch-Stände, Dixi-Klo (mit Vorschau, Drehen, Lieferseite, Kasse und Kosten) |
 | **M4** | Besucher: laufen frei über das Gelände, haben Bedürfnisse, suchen passende Angebote auf |
 | **M5** | Wirtschaft: Einnahmen und Ausgaben, Ticketpreis, Geldanzeige |
 | **M6** | Phasen-System: Planung → Vorbereitung → Festivalwoche → Abbau, Jahresabschluss |
