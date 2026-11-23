@@ -45,6 +45,17 @@ export function queueSpot(b: Building, index: number): { x: number; y: number } 
   return { x: s.x + 0.5 + ox * index, y: s.y + 0.5 + oy * index };
 }
 
+/** Wie viele Plätze die Schlange hat: so weit nach außen, wie die Felder begehbar sind (höchstens maxQueue). */
+export function queueCapacity(grid: Grid, b: Building): number {
+  let n = 0;
+  while (n < TUNING.maxQueue) {
+    const spot = queueSpot(b, n);
+    if (!isWalkable(grid, Math.floor(spot.x), Math.floor(spot.y))) break;
+    n++;
+  }
+  return n;
+}
+
 /**
  * Was das Gelände den Gästen gerade bietet: welche Gebäude offen sind, die Schlangen
  * und für jede Gebäudeart eine Wegweiser-Karte zum nächsten erreichbaren Angebot.
@@ -54,6 +65,7 @@ export class Offers {
   private readonly open = new Map<number, Building>();
   private readonly queues = new Map<number, number[]>();
   private readonly progress = new Map<number, number>();
+  private readonly capacity = new Map<number, number>();
   private readonly services = new Map<number, Building>();
   /** Feld → Zuschauerbereich der offenen Bühne, zu der es gehört */
   private readonly audiences = new Map<number, Cell[]>();
@@ -71,11 +83,13 @@ export class Offers {
     this.open.clear();
     this.services.clear();
     this.audiences.clear();
+    this.capacity.clear();
     for (const b of this.grid.buildings()) {
       const open = isDelivered(this.grid, b, roads) && (b.type !== 'stage' || isStageTime(second));
       if (!open) continue;
       this.open.set(b.id, b);
       if (b.type !== 'stage') {
+        this.capacity.set(b.id, queueCapacity(this.grid, b));
         const s = serviceCell(b);
         this.services.set(s.y * this.grid.width + s.x, b);
       } else {
@@ -84,7 +98,13 @@ export class Offers {
       }
     }
     for (const [id, queue] of this.queues) {
-      if (this.open.has(id)) continue;
+      if (this.open.has(id)) {
+        // Wartende, deren Platz nicht mehr begehbar ist (z. B. neuer Zaun), müssen gehen.
+        const room = this.capacity.get(id) ?? 0;
+        if (queue.length > room) this.dissolved.push(...queue.splice(room));
+        if (room === 0) this.progress.delete(id);
+        continue;
+      }
       this.dissolved.push(...queue);
       this.queues.delete(id);
       this.progress.delete(id);
@@ -98,7 +118,7 @@ export class Offers {
         continue;
       }
       const waiting = this.queue(b.id).length;
-      if (waiting >= TUNING.maxQueue) continue;
+      if (waiting >= (this.capacity.get(b.id) ?? 0)) continue;
       list.push({ ...serviceCell(b), cost: waiting * TUNING.queueCostPerGuest });
     }
     // Karten nur neu bauen, wenn sich Begehbarkeit oder Ziele (inkl. Schlangen-Zuschlag) geändert haben.
@@ -149,7 +169,7 @@ export class Offers {
     const b = this.open.get(id);
     if (!b || b.type === 'stage') return false;
     const queue = this.queues.get(id) ?? [];
-    if (queue.length >= TUNING.maxQueue) return false;
+    if (queue.length >= (this.capacity.get(id) ?? 0)) return false;
     queue.push(guestId);
     this.queues.set(id, queue);
     return true;

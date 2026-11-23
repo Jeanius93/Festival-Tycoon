@@ -128,3 +128,35 @@ describe('Festival mit Gästen', () => {
     expect(f.stats().guests).toBeGreaterThan(250);
   }, 30000);
 });
+
+describe('Festival – Regeln, die nie brechen dürfen', () => {
+  it('ganzes Festival mit Zufahrt von unten: Autos nie auf Wiese oder Gebäude, Gäste nie im Zaun', async () => {
+    const { campFromBelow, carMayStand } = await import('./helpers/festivalScenes');
+    const { isWalkable } = await import('../src/visitors/flowField');
+    const g = campFromBelow();
+    const f = new Festival(g, 4);
+    f.start();
+    let badCar = '';
+    let badGuest = '';
+    while (f.phase === 'running') {
+      f.tick();
+      for (const c of f.cars()) if (!carMayStand(g, Math.floor(c.x), Math.floor(c.y))) badCar ||= `${c.x},${c.y}`;
+      for (const x of f.guests()) {
+        if (x.state.kind !== 'inTent' && !isWalkable(g, Math.floor(x.x), Math.floor(x.y))) badGuest ||= `${x.x},${x.y}`;
+      }
+    }
+    expect(badCar).toBe('');
+    expect(badGuest).toBe('');
+    expect(f.summary!.guests).toBeGreaterThan(0);
+  }, 30000);
+  it('Start-Hinweis unterscheidet „kein Anschluss“ und „zu klein“', () => {
+    const g = new Grid(20, 12);
+    const f = new Festival(g);
+    expect(f.startBlocker()).toBe('missing');
+    g.apply(Array.from({ length: 5 }, (_, i) => ({ x: 11, y: 2 + i, camp: true })));
+    g.applyPath(Array.from({ length: 10 }, (_, i) => ({ x: 10, y: 2 + i })), true);
+    expect(f.startBlocker()).toBe('tooSmall');
+    g.apply(Array.from({ length: 5 }, (_, i) => ({ x: 12, y: 2 + i, camp: true })));
+    expect(f.startBlocker()).toBeNull();
+  });
+});

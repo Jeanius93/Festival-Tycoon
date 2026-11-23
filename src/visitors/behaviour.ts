@@ -200,7 +200,8 @@ export function stepGuest(g: Guest, w: GuestWorld): void {
     }
     case 'watch': {
       // 8. Zuschauen, bis die Bühne zu ist, die Musik reicht oder etwas anderes drängt
-      const stageGone = w.offers.field('stage').distance(here.x, here.y) === Infinity;
+      // Steht der Gast nicht mehr im Zuschauerbereich einer offenen Bühne (abgerissen, geschlossen)?
+      const stageGone = w.offers.audienceAt(here.x, here.y) === null;
       const other = (['thirst', 'hunger', 'toilet', 'souvenir'] as const).some((n) => g.needs[n] >= TUNING.urgentAt);
       if (stageGone || g.needs.music <= 0 || other) {
         g.state = wander(w);

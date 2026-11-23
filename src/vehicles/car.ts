@@ -1,8 +1,7 @@
 import { BORDER_TILES } from '../config';
 import type { Cell, Grid } from '../building/grid';
-import { lCells } from '../building/lineTool';
 import type { RoadNetwork } from '../building/roadNetwork';
-import { parkingCell, type Plot } from '../camping/campsites';
+import { campRoute, parkingCell, type Plot } from '../camping/campsites';
 import { moveToward } from '../visitors/movement';
 import { TUNING } from '../visitors/tuning';
 
@@ -35,7 +34,13 @@ function lane(fromX: number, toX: number, y: number): RouteStep[] {
   return out;
 }
 
-/** Anfahrt: Hinspur bis zur Einfahrt, über die Wege zum Zufahrtsfeld, dann übers Gelände zum Parkplatz. */
+/** Darf ein Auto hier stehen? Straße (außerhalb des Grundstücks), Weg oder Zeltfläche ohne Gebäude. */
+export function carDrivable(grid: Grid, x: number, y: number): boolean {
+  if (!grid.inBounds(x, y)) return true;
+  return grid.isPath(x, y) || (grid.isCamp(x, y) && !grid.buildingAt(x, y));
+}
+
+/** Anfahrt: Hinspur bis zur Einfahrt, über die Wege zum Zufahrtsfeld, dann über die Zeltfläche zum Parkplatz. */
 export function arrivalRoute(
   grid: Grid,
   roads: RoadNetwork,
@@ -44,13 +49,12 @@ export function arrivalRoute(
   plot: Plot,
 ): RouteStep[] | null {
   const road = roads.routeFromRoad(access);
-  if (!road) return null;
+  const last = campRoute(grid, access, parkingCell(plot));
+  if (!road || !last) return null;
   return [
     ...lane(fromLaneX, road[0].x, grid.height),
     ...road.map((c) => step(c, true)),
-    ...lCells(access, parkingCell(plot), true)
-      .slice(1)
-      .map((c) => step(c, false)),
+    ...last.map((c) => step(c, false)),
   ];
 }
 
@@ -69,23 +73,22 @@ export function exitRoute(grid: Grid, roads: RoadNetwork, from: Cell): RouteStep
   ];
 }
 
-/** Abfahrt vom Stellplatz: übers Gelände zum Zufahrtsfeld, dann `exitRoute`. */
+/** Abfahrt vom Stellplatz: über die Zeltfläche zum Zufahrtsfeld, dann `exitRoute`. */
 export function departureRoute(grid: Grid, roads: RoadNetwork, plot: Plot, access: Cell): RouteStep[] | null {
   const exit = exitRoute(grid, roads, access);
-  if (!exit) return null;
-  return [
-    ...lCells(parkingCell(plot), access, false)
-      .slice(1)
-      .map((c) => step(c, false)),
-    ...exit,
-  ];
+  const first = campRoute(grid, parkingCell(plot), access);
+  if (!exit || !first) return null;
+  return [...first.map((c) => step(c, false)), ...exit];
 }
 
-/** Ein Tick Fahren zum nächsten Routenpunkt. 'blocked' = dort fehlt der Weg (keine Bewegung). */
+/**
+ * Ein Tick Fahren zum nächsten Routenpunkt. 'blocked' = dort fehlt der Weg bzw. dort ist keine
+ * befahrbare Zeltfläche mehr (z. B. ein neues Gebäude); dann keine Bewegung.
+ */
 export function stepCar(car: Car, grid: Grid): 'moving' | 'blocked' | 'arrived' {
   const next = car.route[0];
   if (!next) return 'arrived';
-  if (next.needsPath && !grid.isPath(next.x, next.y)) return 'blocked';
+  if (next.needsPath ? !grid.isPath(next.x, next.y) : !carDrivable(grid, next.x, next.y)) return 'blocked';
   if (moveToward(car, { x: next.x + 0.5, y: next.y + 0.5 }, TUNING.carPerTick)) car.route.shift();
   return car.route.length === 0 ? 'arrived' : 'moving';
 }

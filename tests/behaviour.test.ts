@@ -168,3 +168,21 @@ describe('Verhalten – Verteilung', () => {
     expect(farthest).toBeLessThanOrEqual(Math.SQRT2 * 5 + 0.5);
   });
 });
+
+describe('Verhalten – abgerissene Bühne', () => {
+  it('Zuschauer einer abgerissenen Bühne gehen, auch wenn es eine zweite Bühne gibt', () => {
+    const grid = new Grid(30, 20);
+    const a = grid.addBuilding({ type: 'stage', x: 2, y: 2, width: 6, height: 4, facing: 'N', paidPrice: 4000 });
+    grid.addBuilding({ type: 'stage', x: 20, y: 2, width: 6, height: 4, facing: 'N', paidPrice: 4000 });
+    grid.applyPath(Array.from({ length: 26 }, (_, i) => ({ x: 1 + i, y: 1 })), true);
+    grid.applyPath(Array.from({ length: 19 }, (_, i) => ({ x: 27, y: 1 + i })), true);
+    const w: GuestWorld = { grid, offers: new Offers(grid), rng: new Random(2), second: 20 * 3600, door: { x: 4, y: 18 }, leaving: false };
+    w.offers.refresh(new RoadNetwork(grid), w.second);
+    const g = guestAt(4.5, 8.5, { music: 80 });
+    g.state = { kind: 'watch', path: [] };
+    grid.removeBuilding(a.id);
+    w.offers.refresh(new RoadNetwork(grid), w.second);
+    stepGuest(g, w);
+    expect(g.state.kind).not.toBe('watch');
+  });
+});

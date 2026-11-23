@@ -1,11 +1,10 @@
 import { BORDER_TILES, FESTIVAL } from '../config';
 import type { Cell, Grid } from '../building/grid';
-import { lCells } from '../building/lineTool';
 import { RoadNetwork, vehicleRoute } from '../building/roadNetwork';
-import { findCampZones, freePlots, parkingCell, plotCells, tentDoor, type CampZone, type Plot } from '../camping/campsites';
+import { campRoute, findCampZones, freePlots, parkingCell, plotCells, tentDoor, type CampZone, type Plot } from '../camping/campsites';
 import { GameClock } from '../core/clock';
 import { Random } from '../core/random';
-import { arrivalRoute, exitRoute, stepCar, type Car, type RouteStep } from '../vehicles/car';
+import { arrivalRoute, departureRoute, exitRoute, stepCar, type Car, type RouteStep } from '../vehicles/car';
 import { stepGuest } from './behaviour';
 import { createGuest, fulfil, growNeeds, tickSatisfaction, type Guest } from './guest';
 import { Offers } from './offers';
@@ -120,7 +119,13 @@ export class Festival {
 
   /** Startbar, wenn es mindestens einen freien Stellplatz auf einer angeschlossenen Zeltfläche gibt. */
   canStart(): boolean {
-    return this.currentPhase === 'building' && this.findFreePlot() !== null;
+    return this.currentPhase === 'building' && this.startBlocker() === null;
+  }
+
+  /** Warum nicht gestartet werden kann: keine angeschlossene Zeltfläche, oder keine hat einen freien 2 × 2-Platz. */
+  startBlocker(): 'missing' | 'tooSmall' | null {
+    if (this.findFreePlot()) return null;
+    return this.campZones.some((z) => z.access) ? 'tooSmall' : 'missing';
   }
 
   start(): boolean {
@@ -290,24 +295,27 @@ export class Festival {
     this.sync();
     const here: Cell = { x: Math.floor(car.x), y: Math.floor(car.y) };
     const onRoad = here.y >= this.grid.height;
+    const onPath = this.grid.isPath(here.x, here.y);
+    const access = this.zoneOf(group.plot)?.access;
+    const viaPaths = (to: Cell) => vehicleRoute(this.grid, here, to)?.map((c) => ({ ...c, needsPath: true })) ?? null;
+    const overCamp = (from: Cell, to: Cell) =>
+      campRoute(this.grid, from, to)?.map((c) => ({ ...c, needsPath: false })) ?? null;
     if (car.state === 'arriving') {
-      const access = this.zoneOf(group.plot)?.access;
       if (!access) return null;
       if (onRoad) return arrivalRoute(this.grid, this.roads, here.x, access, group.plot);
-      const toAccess = this.grid.isPath(here.x, here.y) ? vehicleRoute(this.grid, here, access) : null;
-      if (!toAccess) return null;
-      const last = lCells(access, parkingCell(group.plot), true).slice(1);
-      return [...toAccess.map((c) => ({ ...c, needsPath: true })), ...last.map((c) => ({ ...c, needsPath: false }))];
+      const parking = parkingCell(group.plot);
+      if (!onPath) return overCamp(here, parking);
+      const toAccess = viaPaths(access);
+      const last = overCamp(access, parking);
+      return toAccess && last ? [...toAccess, ...last] : null;
     }
     if (onRoad) return null; // auf der Rückspur gibt es nichts zu blockieren
-    if (this.grid.isPath(here.x, here.y) && this.roads.isConnected(here.x, here.y)) {
-      return exitRoute(this.grid, this.roads, here);
-    }
-    const access = this.zoneOf(group.plot)?.access;
+    if (onPath && this.roads.isConnected(here.x, here.y)) return exitRoute(this.grid, this.roads, here);
+    // Sonst nur über Wege bzw. die Zeltfläche zur Zufahrt, nie quer über die Wiese.
     if (!access) return null;
+    const toAccess = onPath ? viaPaths(access) : overCamp(here, access);
     const exit = exitRoute(this.grid, this.roads, access);
-    if (!exit) return null;
-    return [...lCells(here, access, false).slice(1).map((c) => ({ ...c, needsPath: false })), ...exit];
+    return toAccess && exit ? [...toAccess, ...exit] : null;
   }
 
   /** Auto ist angekommen: Zelt aufbauen, zwei Gäste steigen aus. */
@@ -363,8 +371,10 @@ export class Festival {
       group.guestIds = [];
       this.tentMap.delete(group.id);
       car.state = 'leaving';
-      car.route = [];
-      this.replan(car);
+      const access = this.zoneOf(group.plot)?.access;
+      const route = access ? departureRoute(this.grid, this.roads, group.plot, access) : null;
+      if (route) car.route = route;
+      else this.replan(car);
     }
   }
 

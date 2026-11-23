@@ -49,3 +49,16 @@ describe('Zeltflächen', () => {
     expect(findCampZones(g, roads).map((z) => z.id)).toEqual([21, 26]);
   });
 });
+
+describe('Zeltflächen – erreichbare Stellplätze', () => {
+  it('Stellplätze hinter einer Wand aus Gebäuden werden nicht angeboten', () => {
+    const { g, roads } = scene();
+    // Klo-Reihe quer durch die Fläche bei y = 4 (x 2..5) trennt die obere Hälfte von der Zufahrt (6,5)
+    for (const x of [2, 3, 4, 5]) g.addBuilding({ type: 'toilet', x, y: 4, width: 1, height: 1, facing: 'N', paidPrice: 150 });
+    g.clear([2, 3, 4, 5].map((y) => ({ x: 6, y })).filter((c) => c.y < 5));
+    const zone = findCampZones(g, new RoadNetwork(g))[0];
+    expect(zone.access).toEqual({ x: 6, y: 5 });
+    expect(freePlots(g, zone)).toEqual([]);
+    expect(roads).toBeDefined();
+  });
+});

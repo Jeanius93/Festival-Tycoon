@@ -25,6 +25,7 @@ describe('Auto', () => {
   });
   it('stepCar fährt mit 0,15 Feldern pro Tick und meldet die Ankunft', () => {
     const g = new Grid(5, 5);
+    g.apply([{ x: 1, y: 3, camp: true }, { x: 1, y: 4, camp: true }]);
     const car = carAt(1.5, 4.5, [{ x: 1, y: 3, needsPath: false }]);
     expect(stepCar(car, g)).toBe('moving');
     expect(car.y).toBeCloseTo(4.35);
@@ -49,5 +50,25 @@ describe('Auto', () => {
     expect(r).toContainEqual({ x: 10, y: 11, needsPath: true });
     expect(r).toContainEqual({ x: 10, y: 13, needsPath: false });
     expect(r.at(-1)).toEqual({ x: 22, y: 13, needsPath: false });
+  });
+});
+
+describe('Auto – nie über die Wiese', () => {
+  it('Zufahrt von unten: Anfahrt und Abfahrt bleiben auf Weg und Zeltfläche, nie durchs Klo', async () => {
+    const { campFromBelow, carMayStand } = await import('./helpers/festivalScenes');
+    const g = campFromBelow();
+    const roads = new RoadNetwork(g);
+    for (const plot of [{ x: 13, y: 19 }, { x: 19, y: 19 }, { x: 16, y: 17 }]) {
+      const there = arrivalRoute(g, roads, -3, { x: 10, y: 21 }, plot)!;
+      const back = departureRoute(g, roads, plot, { x: 10, y: 21 })!;
+      for (const s of [...there, ...back]) expect(carMayStand(g, s.x, s.y), `${s.x},${s.y}`).toBe(true);
+    }
+  });
+  it('stepCar hält vor einem Gebäude, das auf dem letzten Stück gebaut wurde', () => {
+    const g = new Grid(5, 5);
+    g.apply([{ x: 1, y: 1, camp: true }, { x: 2, y: 1, camp: true }]);
+    g.addBuilding({ type: 'toilet', x: 2, y: 1, width: 1, height: 1, facing: 'N', paidPrice: 150 });
+    const car = carAt(1.5, 1.5, [{ x: 2, y: 1, needsPath: false }]);
+    expect(stepCar(car, g)).toBe('blocked');
   });
 });

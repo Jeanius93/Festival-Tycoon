@@ -17,6 +17,7 @@ export function statsLabel(guests: number, satisfaction: number): string {
 
 export const START_LABEL = 'Festival starten';
 export const START_MISSING = 'Zeltfläche mit Weg zur Straße fehlt';
+export const START_TOO_SMALL = 'Zeltfläche zu klein: 2 × 2 freie Felder nötig';
 
 /** Zeilen der Zusammenfassung am Ende des Festivals. */
 export function summaryLines(s: FestivalSummary): string[] {

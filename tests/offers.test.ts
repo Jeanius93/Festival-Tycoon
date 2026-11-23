@@ -88,3 +88,23 @@ describe('Angebote', () => {
     expect(offers.queue(1)).toEqual([]);
   });
 });
+
+describe('Angebote – Schlangen nur auf begehbaren Feldern', () => {
+  it('Zaun vor der Theke begrenzt die Schlange', () => {
+    const { g, offers } = scene();
+    g.apply([{ x: 4, y: 7, structure: 'fence' }]);
+    offers.refresh(new RoadNetwork(g), 15 * 3600);
+    expect(offers.join(1, 1)).toBe(true);
+    expect(offers.join(1, 2)).toBe(true);
+    expect(offers.join(1, 3)).toBe(false);
+  });
+  it('später gebauter Zaun schickt die hinteren Wartenden weg', () => {
+    const { g, offers } = scene();
+    offers.refresh(new RoadNetwork(g), 15 * 3600);
+    for (const id of [1, 2, 3]) offers.join(1, id);
+    g.apply([{ x: 4, y: 6, structure: 'fence' }]);
+    offers.refresh(new RoadNetwork(g), 15 * 3600);
+    expect(offers.queue(1)).toEqual([1]);
+    expect(offers.takeDissolved()).toEqual([2, 3]);
+  });
+});

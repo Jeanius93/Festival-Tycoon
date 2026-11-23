@@ -6,7 +6,7 @@ import type { Cash } from '../economy/cash';
 import { buildingHint, TOOL_HINTS } from '../ui/hints';
 import { formatMoney } from '../ui/format';
 import { MAIN_MENU, MenuState, categoryOf, subMenu, type MenuCategory, type MenuEntry } from '../ui/menu';
-import { START_LABEL, START_MISSING, clockLabel, statsLabel, summaryLines } from '../ui/festivalText';
+import { START_LABEL, START_MISSING, START_TOO_SMALL, clockLabel, statsLabel, summaryLines } from '../ui/festivalText';
 import type { Festival } from '../visitors/festival';
 
 const toCss = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
@@ -153,11 +153,12 @@ export class UIScene extends Phaser.Scene {
   update(): void {
     const f = this.festival;
     const phase = f.phase;
-    const canStart = phase === 'building' && f.canStart();
+    const blocker = phase === 'building' ? f.startBlocker() : null;
+    const canStart = phase === 'building' && blocker === null;
     const clock = phase === 'running' ? clockLabel(f.clock.second, f.clock.speed, f.clock.paused) : '';
     const stats = phase === 'running' ? statsLabel(f.stats().guests, f.stats().satisfaction) : '';
     const summary = phase === 'finished' && f.summary ? summaryLines(f.summary).join('\n') : '';
-    const key = `${this.scale.width}x${this.scale.height}|${phase}|${canStart}|${clock}|${stats}|${summary}`;
+    const key = `${this.scale.width}x${this.scale.height}|${phase}|${blocker}|${clock}|${stats}|${summary}`;
     if (key === this.festivalKey) return;
     this.festivalKey = key;
     this.clockText.setVisible(phase === 'running').setText(clock);
@@ -165,7 +166,7 @@ export class UIScene extends Phaser.Scene {
     const building = phase === 'building';
     this.startButton.box.setVisible(building).setFillStyle(canStart ? COLORS.uiButtonActive : COLORS.uiButton, canStart ? 1 : 0.6);
     this.startButton.label.setVisible(building).setAlpha(canStart ? 1 : 0.6);
-    this.startHint.setVisible(building && !canStart);
+    this.startHint.setVisible(building && !canStart).setText(blocker === 'tooSmall' ? START_TOO_SMALL : START_MISSING);
     const finished = phase === 'finished';
     this.summaryPanel.setVisible(finished);
     this.summaryText.setVisible(finished).setText(summary);

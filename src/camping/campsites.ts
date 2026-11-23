@@ -100,7 +100,63 @@ function findAccess(grid: Grid, roads: RoadNetwork, cells: Cell[]): Cell | null 
   return best;
 }
 
-/** Freie Stellplätze einer Zone, nächster zur Zufahrt zuerst. */
+/** Darf ein Auto auf dem letzten Stück über dieses Feld fahren? Zeltfläche ohne Gebäude. */
+function campDrivable(grid: Grid, x: number, y: number): boolean {
+  return grid.isCamp(x, y) && !grid.buildingAt(x, y);
+}
+
+/**
+ * Fahrweg über die Zeltfläche (4er-Nachbarschaft, nur markierte Felder ohne Gebäude):
+ * `from` ausgeschlossen, `to` eingeschlossen; `from` und `to` dürfen auch Wegfelder daneben sein.
+ * Unerreichbar → null.
+ */
+export function campRoute(grid: Grid, from: Cell, to: Cell): Cell[] | null {
+  if (from.x === to.x && from.y === to.y) return [];
+  const w = grid.width;
+  const parent = new Map<number, number>();
+  const start = from.y * w + from.x;
+  const goal = to.y * w + to.x;
+  parent.set(start, -1);
+  const queue = [start];
+  for (let head = 0; head < queue.length && !parent.has(goal); head++) {
+    const i = queue[head];
+    const x = i % w;
+    const y = (i - x) / w;
+    for (const [dx, dy] of STEPS) {
+      const nx = x + dx;
+      const ny = y + dy;
+      const n = ny * w + nx;
+      if (!grid.inBounds(nx, ny) || parent.has(n)) continue;
+      if (n !== goal && !campDrivable(grid, nx, ny)) continue;
+      parent.set(n, i);
+      queue.push(n);
+    }
+  }
+  if (!parent.has(goal)) return null;
+  const route: Cell[] = [];
+  for (let i = goal; i !== start; i = parent.get(i)!) route.push({ x: i % w, y: Math.floor(i / w) });
+  return route.reverse();
+}
+
+/** Felder der Zeltfläche, die ein Auto von der Zufahrt aus erreicht (Index y * Breite + x). */
+function reachableFrom(grid: Grid, access: Cell): Set<number> {
+  const w = grid.width;
+  const seen = new Set<number>([access.y * w + access.x]);
+  const queue: Cell[] = [access];
+  while (queue.length > 0) {
+    const c = queue.pop()!;
+    for (const [dx, dy] of STEPS) {
+      const x = c.x + dx;
+      const y = c.y + dy;
+      if (!campDrivable(grid, x, y) || seen.has(y * w + x)) continue;
+      seen.add(y * w + x);
+      queue.push({ x, y });
+    }
+  }
+  return seen;
+}
+
+/** Freie Stellplätze einer Zone, die ein Auto von der Zufahrt erreicht; nächster zur Zufahrt zuerst. */
 export function freePlots(grid: Grid, zone: CampZone): Plot[] {
   const usable = (x: number, y: number) =>
     grid.isCamp(x, y) && !grid.isPath(x, y) && !grid.buildingAt(x, y) && !grid.isOccupied(x, y);
@@ -117,10 +173,15 @@ export function freePlots(grid: Grid, zone: CampZone): Plot[] {
   }
   const access = zone.access;
   if (!access) return plots;
+  const reach = reachableFrom(grid, access);
+  const reachable = plots.filter((p) => {
+    const park = parkingCell(p);
+    return reach.has(park.y * grid.width + park.x);
+  });
   const dist = (p: Plot) => {
     const park = parkingCell(p);
     return Math.abs(park.x - access.x) + Math.abs(park.y - access.y);
   };
   // Array.sort ist stabil: bei Gleichstand bleibt die Lesereihenfolge.
-  return plots.sort((a, b) => dist(a) - dist(b));
+  return reachable.sort((a, b) => dist(a) - dist(b));
 }
