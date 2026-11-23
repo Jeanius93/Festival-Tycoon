@@ -341,9 +341,12 @@ export class WorldScene extends Phaser.Scene {
     const x = (b.x + BORDER_TILES) * TILE_SIZE;
     const y = (b.y + BORDER_TILES) * TILE_SIZE;
     const image = this.add.image(x, y, buildingTextureKey(b.type, b.facing)).setOrigin(0, 0).setDepth(DEPTH.buildings);
-    // Warnschild mittig über der Oberkante des Gebäudes
+    // Warnschild mittig auf der Rückseite, also dort, wo der Lieferweg fehlt
+    const w = b.width * TILE_SIZE;
+    const h = b.height * TILE_SIZE;
+    const [wx, wy] = { N: [w / 2, 0], S: [w / 2, h], E: [w, h / 2], W: [0, h / 2] }[b.facing];
     const warning = this.add
-      .image(x + (b.width * TILE_SIZE) / 2, y, TEXTURE_KEYS.deliveryWarning)
+      .image(x + wx, y + wy, TEXTURE_KEYS.deliveryWarning)
       .setOrigin(0.5, 0.5)
       .setDepth(DEPTH.warnings);
     this.buildingImages.set(b.id, image);

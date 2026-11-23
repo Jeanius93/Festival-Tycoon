@@ -56,5 +56,6 @@ export const COLORS = {
   uiPanel: 0x3e2723,
   uiButton: 0x6d4c41,
   uiButtonActive: 0xef8f00,
+  uiButtonOpen: 0x8d6e63,
   uiText: 0xfff8e1,
 } as const;
