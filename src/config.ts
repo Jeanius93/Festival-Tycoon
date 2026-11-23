@@ -24,6 +24,9 @@ export const EDGE_SCROLL_MARGIN = 16;
 /** Breite des Gebüsch-Randes rund um das Grundstück (in Feldern). */
 export const BORDER_TILES = 3;
 
+/** Geld in der Kasse zu Spielbeginn (in Euro). */
+export const START_CASH = 10000;
+
 export const GAME_TITLE = 'Festival Tycoon';
 
 /** Warme, gemütliche Grundfarben (Platzhalter bis zu den echten Grafiken). */
