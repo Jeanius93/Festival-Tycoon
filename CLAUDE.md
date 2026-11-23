@@ -16,7 +16,8 @@
 | M0 – Grundgerüst & Deployment | ✅ fertig, gemergt, läuft auf GitHub Pages |
 | M1 – Wiese, Raster, Kamera, Wege | ✅ fertig, gemergt, läuft auf GitHub Pages |
 | M2 – Geländebereiche (Zäune & Durchgänge) | ✅ fertig, gemergt, läuft auf GitHub Pages |
-| M3 bis M10 | offen |
+| M3 – Objekte platzieren (Bau-Menü, Gebäude, Kasse) | ✅ fertig (Pull Request; nach dem Merge auf GitHub Pages spielbar) |
+| M4 bis M10 | offen |
 
 ## Vor jeder Aufgabe
 - **`GAME_DESIGN.md` lesen.** Sie ist die Gesamtvision des Spiels und die zentrale Quelle für alle Entscheidungen.

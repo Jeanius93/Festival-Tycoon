@@ -24,7 +24,7 @@ export class TitleScene extends Phaser.Scene {
       .text(0, 0, GAME_TITLE, { fontFamily: 'monospace', fontStyle: 'bold', color: toCss(COLORS.titleText) })
       .setOrigin(0.5);
     this.subtitle = this.add
-      .text(0, 0, 'M1 – Wiese & Wege', { fontFamily: 'monospace', color: toCss(COLORS.titleText) })
+      .text(0, 0, 'M3 – Bühnen, Stände & Kasse', { fontFamily: 'monospace', color: toCss(COLORS.titleText) })
       .setOrigin(0.5);
     this.playButton = this.add
       .text(0, 0, '▶ Spielen', {
